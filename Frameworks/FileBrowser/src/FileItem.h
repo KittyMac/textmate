@@ -1,14 +1,7 @@
-#import <oak/misc.h>
-#import <scm/status.h>
-
-PUBLIC extern NSURL* const kURLLocationComputer;
-PUBLIC extern NSURL* const kURLLocationFavorites;
+extern NSURL* const kURLLocationComputer;
+extern NSURL* const kURLLocationFavorites;
 
 @class OakFinderTag;
-
-@interface NSURL (CompatibilityWrapper)
-@property (nonatomic, readonly) BOOL tmHasDirectoryPath;
-@end
 
 @interface FileItem : NSObject <QLPreviewItem>
 @property (nonatomic) NSURL* URL;
@@ -18,8 +11,6 @@ PUBLIC extern NSURL* const kURLLocationFavorites;
 @property (nonatomic, readonly) NSURL* parentURL;
 @property (nonatomic, readonly, getter = isDirectory) BOOL directory;
 
-@property (nonatomic, readonly) NSImage* image;
-@property (nonatomic, readonly) scm::status::type SCMStatus;
 @property (nonatomic, readonly) NSString* displayName;
 
 @property (nonatomic) NSString* localizedName;
@@ -28,9 +19,6 @@ PUBLIC extern NSURL* const kURLLocationFavorites;
 
 @property (nonatomic, readonly) BOOL canRename;
 @property (nonatomic, readonly, getter = isApplication) BOOL application;
-
-@property (nonatomic, getter = isOpen)             BOOL open;
-@property (nonatomic, getter = isModified)         BOOL modified;
 
 @property (nonatomic, getter = isMissing)          BOOL missing;
 @property (nonatomic, getter = isHidden)           BOOL hidden;

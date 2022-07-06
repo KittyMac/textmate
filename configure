@@ -2,101 +2,34 @@
 # set -u
 function error () { printf >&2 "%s\n\nPlease see README.md for build instructions.\n" "$1"; exit 1; }
 
-# =================================================
-# = Fallback build directory and signing identity =
-# =================================================
-
-: ${builddir:=$HOME/build/TextMate}
-: ${identity:=-}
-: ${capnp_prefix:=/usr/local}
-: ${rest_api:=https://api.textmate.org}
-: ${CC:=xcrun clang}
-: ${CXX:=xcrun clang++}
-
-# ========================================================
-# = Application name, version, revision, and required OS =
-# ========================================================
-
-name=TextMate
-ver=$(curl -sf "${rest_api}/releases/nightly/version")${tag:-+git.$(git rev-parse --short HEAD)}
-min_os=10.10
-
 # ===============================
-# = Check if boost is installed =
+# = Check required dependencies =
 # ===============================
 
-if which -s brew && [[ -z "$boostdir" && ! -d /usr/local/include/boost ]]; then
-	boostdir=$(brew --prefix boost)/include/boost
-fi
-
-for dir in "${boostdir:-/usr/include/boost}" /{opt,usr}/local/include/boost ${CPATH//:/ }; do
-	if [[ ! -L "${builddir}/include/boost" && -d "${dir}" ]]; then
-		mkdir -p "${builddir}/include" && ln -fs "${dir}" "${builddir}/include/boost"
-	fi
-done
-
-test -L "${builddir}/include/boost" || error "*** boost not installed."
-
-# ===========================================
-# = Check if google sparsehash is installed =
-# ===========================================
-
-if which -s brew && [[ -z "$sparsedir" && ! -d /usr/local/include/sparsehash ]]; then
-	sparsedir=$(brew --prefix google-sparsehash)/include/sparsehash
-fi
-
-for dir in "${sparsedir:-/usr/include/sparsehash}" /{opt,usr}/local/include/sparsehash/ ; do
-	if [[ ! -L "${builddir}/include/sparsehash" && -d "${dir}" ]]; then
-		mkdir -p "${builddir}/include" && ln -fs "${dir}" "${builddir}/include/sparsehash"
-	fi
-done
-
-test -L "${builddir}/include/sparsehash" || error "*** google sparsehash not installed."
-
-# ===========================================
-# = Check if non-system openssl is intalled =
-# ===========================================
-
-if which -s brew && [[ -z "$libressl_prefix" && ! -d "${libressl_prefix}/include/openssl" ]]; then
-	libressl_prefix=$(brew --prefix libressl)
-	test -d "${libressl_prefix}/include/" || error "*** openssl headers not found."
-fi
-
-if which -s port && [[ -z "$libressl_prefix" && ! -d "${libressl_prefix}/include/openssl" ]]; then
-	libressl_prefix=/opt/local/
-	test -d "${libressl_prefix}/include/openssl" || error "*** openssl headers not found."
-fi
-
-# ===============================================
-# = Check if we can use pbzip2 instead of bzip2 =
-# ===============================================
-
-bzip2_flag="-j"
-if which -s pbzip2; then
-	bzip2_flag="--use-compress-prog=pbzip2"
-fi
-
-# ==============================
-# = Check various dependencies =
-# ==============================
-
-test -x "${capnp_prefix}/bin/capnp" || error "*** cap’n’proto not installed in ‘${capnp_prefix}’. Set \`capnp_prefix\` if installed elsewhere."
-
-for dep in ninja ragel multimarkdown pgrep pkill; do
+for dep in capnp ninja ragel multimarkdown pgrep pkill; do
 	which -s "$dep" || error "*** dependency missing: ‘${dep}’."
 done
 
-# =====================================
-# = Generate fixtures and build files =
-# =====================================
+if [[ -e local.rave ]]; then
+	echo >&2 "Skipping writing ‘local.rave’: File already exists"
+else
+	echo >> local.rave 'add FLAGS    "-I/usr/local/include"'
+	echo >> local.rave 'add LN_FLAGS "-L/usr/local/lib"'
 
-mkdir -p "$builddir/Frameworks/SoftwareUpdate/fixtures"
-DST=$(cd >/dev/null "$builddir/Frameworks/SoftwareUpdate/fixtures"; pwd) make -C Frameworks/SoftwareUpdate/fixtures
+	for hdr in boost/{crc,variant}.hpp capnp/{message,serialize-packed}.h sparsehash/dense_hash_map; do
+		test -f "/usr/local/include/${hdr}" || error "*** dependency missing: ‘/usr/local/include/${hdr}’. Install dependency and/or update ‘local.rave’ with correct path."
+	done
 
-bin/gen_build -o build.ninja -C "$builddir" -dAPP_NAME="$name" -dAPP_VERSION="$ver" -dAPP_MIN_OS="$min_os" -dCC="$CC" -dCXX="$CXX" -didentity="$identity" -drest_api="$rest_api" -dbzip2_flag="$bzip2_flag" -dtest_flags="$test" -dcapnp_prefix="$capnp_prefix" -dlibressl_prefix="$libressl_prefix" target
+	for lib in capnp kj; do
+		test -f "/usr/local/lib/lib${lib}."* || error "*** dependency missing: ‘/usr/local/lib/lib${lib}.*’. Install dependency and/or update ‘local.rave’ with correct path."
+	done
+fi
 
-ninja Frameworks/encoding/src/frequencies.capnp.h
-ninja Frameworks/plist/src/cache.capnp.h
+# ========================
+# = Generate build files =
+# ========================
 
-BUNDLES_TBZ=Applications/TextMate/resources/DefaultBundles.tbz
-test -e "$BUNDLES_TBZ" || builddir="$builddir" bin/create_default_bundles_tbz "$BUNDLES_TBZ"
+if [[ -d "$builddir" ]];
+	then bin/rave -crelease -tTextMate -b"$builddir"
+	else bin/rave -crelease -tTextMate
+fi

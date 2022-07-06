@@ -16,97 +16,11 @@ static NSData* Digest (NSString* someString)
 	return [NSData dataWithBytes:md length:sizeof(md)];
 }
 
-// ============================
-// = JavaScript Bridge Object =
-// ============================
-
-@interface AboutWindowJSBridge : NSObject
-{
-	NSString* version;
-	NSString* copyright;
-	NSString* licensees;
-}
-- (void)addLicense;
-@end
-
-@implementation AboutWindowJSBridge
-+ (BOOL)isSelectorExcludedFromWebScript:(SEL)aSelector { return aSelector != @selector(addLicense) && aSelector != @selector(themeColors); }
-+ (BOOL)isKeyExcludedFromWebScript:(char const*)name   { return strcmp(name, "version") != 0 && strcmp(name, "copyright") != 0 && strcmp(name, "licensees") != 0; }
-+ (NSString*)webScriptNameForSelector:(SEL)aSelector   { return NSStringFromSelector(aSelector); }
-+ (NSString*)webScriptNameForKey:(char const*)name     { return @(name); }
-
-- (NSString*)version
-{
-	return [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
-}
-
-- (NSString*)copyright
-{
-	return [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSHumanReadableCopyright"];
-}
-
-- (NSString*)licensees
-{
-	return LicenseManager.sharedInstance.owner;
-}
-
-- (NSString*)themeColors
-{
-	NSString* css = @":root {"
-		" --textColor:       #000000ff;"
-		" --backgroundColor: #f1f1f1ff;"
-		" --shadowColor:     #ffffffc0;"
-	"}";
-
-	if(@available(macos 10.14, *))
-	{
-		NSAppearanceName appearanceName = [NSApp.effectiveAppearance bestMatchFromAppearancesWithNames:@[ NSAppearanceNameAqua, NSAppearanceNameDarkAqua ]];
-		if([appearanceName isEqualToString:NSAppearanceNameDarkAqua])
-		{
-			css = @":root {"
-				" --textColor:       #ffffffff;"
-				" --backgroundColor: #1e1e1eff;"
-				" --shadowColor:     #1e1e1ec0;"
-			"}";
-		}
-	}
-	return css;
-}
-
-- (void)addLicense
-{
-	[LicenseManager.sharedInstance showAddLicenseWindow:self];
-}
-@end
-
-// ====================================
-// = Auto-reload on appearance change =
-// ====================================
-
-@interface AboutWindowWebView : WebView
-@property (nonatomic, copy) NSURL* lastURLRequested;
-@end
-
-@implementation AboutWindowWebView
-- (void)loadRequest:(NSURLRequest*)urlRequest
-{
-	self.lastURLRequested = urlRequest.URL;
-	[self.mainFrame loadRequest:urlRequest];
-}
-
-- (void)viewDidChangeEffectiveAppearance
-{
-	[super viewDidChangeEffectiveAppearance];
-	if(NSURL* url = self.lastURLRequested)
-		[self.mainFrame loadRequest:[NSURLRequest requestWithURL:url cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60]];
-}
-@end
-
-// ====================================
-
-@interface AboutWindowController () <NSWindowDelegate, NSToolbarDelegate, WebFrameLoadDelegate, WebPolicyDelegate>
+@interface AboutWindowController () <NSWindowDelegate, NSToolbarDelegate, WKNavigationDelegate, WKScriptMessageHandler>
+@property (nonatomic, readonly) NSArray<NSString*>* segmentLabels;
 @property (nonatomic) NSToolbar* toolbar;
-@property (nonatomic) AboutWindowWebView* webView;
+@property (nonatomic) NSSegmentedControl* segmentedControl;
+@property (nonatomic) WKWebView* webView;
 @property (nonatomic) NSString* selectedPage;
 @end
 
@@ -123,12 +37,12 @@ static NSData* Digest (NSString* someString)
 	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
 		if(NSString* releaseNotes = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:NULL])
 		{
-			NSData* lastDigest    = [[NSUserDefaults standardUserDefaults] dataForKey:kUserDefaultsReleaseNotesDigestKey];
+			NSData* lastDigest    = [NSUserDefaults.standardUserDefaults dataForKey:kUserDefaultsReleaseNotesDigestKey];
 			NSData* currentDigest = Digest(releaseNotes);
 			dispatch_async(dispatch_get_main_queue(), ^{
 				if(lastDigest && ![lastDigest isEqualToData:currentDigest])
-					[[AboutWindowController sharedInstance] showChangesWindow:self];
-				[[NSUserDefaults standardUserDefaults] setObject:currentDigest forKey:kUserDefaultsReleaseNotesDigestKey];
+					[AboutWindowController.sharedInstance showChangesWindow:self];
+				[NSUserDefaults.standardUserDefaults setObject:currentDigest forKey:kUserDefaultsReleaseNotesDigestKey];
 			});
 		}
 	});
@@ -144,48 +58,72 @@ static NSData* Digest (NSString* someString)
 	rect.origin.y = round(NSMinY(visibleRect) + dy*3/4);
 	rect.origin.x = NSMaxY(visibleRect) - NSMaxY(rect);
 
-	NSWindow* win = [[NSWindow alloc] initWithContentRect:rect styleMask:(NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable|NSWindowStyleMaskMiniaturizable) backing:NSBackingStoreBuffered defer:NO];
+	NSWindow* win = [[NSPanel alloc] initWithContentRect:rect styleMask:(NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable|NSWindowStyleMaskMiniaturizable|NSWindowStyleMaskFullSizeContentView) backing:NSBackingStoreBuffered defer:NO];
 	if((self = [super initWithWindow:win]))
 	{
+		_segmentLabels    = @[ @"About", @"Changes", @"Bundles", @"Registration", @"Legal", @"Contributions" ];
+		_segmentedControl = [NSSegmentedControl segmentedControlWithLabels:_segmentLabels trackingMode:NSSegmentSwitchTrackingSelectOne target:self action:@selector(takeSelectedSegmentFrom:)];
+
 		self.toolbar = [[NSToolbar alloc] initWithIdentifier:@"About TextMate"];
 		[self.toolbar setAllowsUserCustomization:NO];
-		[self.toolbar setDisplayMode:NSToolbarDisplayModeLabelOnly];
+		[self.toolbar setDisplayMode:NSToolbarDisplayModeIconOnly];
 		[self.toolbar setDelegate:self];
 		[win setToolbar:self.toolbar];
 
-		NSView* contentView = [[NSView alloc] initWithFrame:NSZeroRect];
-		[win setTitle:@"About TextMate"];
-		[win setContentView:contentView];
 		[win setFrameAutosaveName:@"BundlesReleaseNotes"];
 		[win setDelegate:self];
 		[win setAutorecalculatesKeyViewLoop:YES];
+		[win setHidesOnDeactivate:NO];
+		[win setTitleVisibility:NSWindowTitleHidden];
 
-		self.webView = [[AboutWindowWebView alloc] initWithFrame:[contentView bounds]];
-		self.webView.drawsBackground = NO;
-		self.webView.translatesAutoresizingMaskIntoConstraints = NO;
-		self.webView.frameLoadDelegate = self;
-		self.webView.policyDelegate = self;
-		[contentView addSubview:self.webView];
+		WKWebViewConfiguration* webConfig = [[WKWebViewConfiguration alloc] init];
+		[webConfig.userContentController addScriptMessageHandler:self name:@"textmate"];
 
-		NSString* const kAboutWindowPreferencesIdentifier = @"About Window Preferences Identifier";
-		WebPreferences* webViewPrefs = [[WebPreferences alloc] initWithIdentifier:kAboutWindowPreferencesIdentifier];
-		webViewPrefs.plugInsEnabled = NO;
-		webViewPrefs.usesPageCache  = NO;
-		webViewPrefs.cacheModel     = WebCacheModelDocumentViewer;
-		self.webView.preferencesIdentifier = kAboutWindowPreferencesIdentifier;
+		self.webView = [[WKWebView alloc] initWithFrame:NSZeroRect configuration:webConfig];
+		self.webView.navigationDelegate = self;
+		[self.webView setValue:@NO forKey:@"drawsBackground"];
 
-		NSDictionary* views = @{ @"webView": self.webView };
-		[contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[webView(>=200)]|" options:NSLayoutFormatAlignAllTop     metrics:nil views:views]];
-		[contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[webView(>=200)]|" options:NSLayoutFormatAlignAllLeading metrics:nil views:views]];
+		if(NSURL* url = [NSBundle.mainBundle URLForResource:@"WKWebView" withExtension:@"js"])
+		{
+			NSError* error;
+			if(NSMutableString* jsBridge = [NSMutableString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:&error])
+			{
+				NSDictionary* variables = @{
+					@"version":   [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"],
+					@"copyright": [NSBundle.mainBundle objectForInfoDictionaryKey:@"NSHumanReadableCopyright"],
+					@"licensees": LicenseManager.sharedInstance.owner ?: [NSNull null],
+				};
+
+				[variables enumerateKeysAndObjectsUsingBlock:^(NSString* key, NSString* value, BOOL* stop){
+					[jsBridge appendFormat:@"TextMate.%@ = %@;\n", key, [self javaScriptEscapedString:[value isEqual:[NSNull null]] ? @"" : value]];
+				}];
+
+				WKUserScript* script = [[WKUserScript alloc] initWithSource:jsBridge injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+				[self.webView.configuration.userContentController addUserScript:script];
+			}
+			else if(error)
+			{
+				os_log_error(OS_LOG_DEFAULT, "Failed to load WKWebView.js: %{public}@", error.localizedDescription);
+			}
+		}
+		else
+		{
+			os_log_error(OS_LOG_DEFAULT, "Failed to locate WKWebView.js in application bundle");
+		}
+
+		[self.webView.widthAnchor constraintGreaterThanOrEqualToConstant:200].active = YES;
+		[self.webView.heightAnchor constraintGreaterThanOrEqualToConstant:200].active = YES;
+
+		[win setContentView:self.webView];
 	}
 	return self;
 }
 
 - (void)dealloc
 {
-	_webView.policyDelegate    = nil;
-	_webView.frameLoadDelegate = nil;
-	[[_webView mainFrame] stopLoading];
+	[_webView.configuration.userContentController removeAllUserScripts];
+	_webView.navigationDelegate = nil;
+	[_webView stopLoading];
 }
 
 - (void)showAboutWindow:(id)sender
@@ -201,7 +139,15 @@ static NSData* Digest (NSString* someString)
 
 	NSURL* url = [[NSBundle mainBundle] URLForResource:@"Changes" withExtension:@"html"];
 	if(NSString* releaseNotes = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:NULL])
-		[[NSUserDefaults standardUserDefaults] setObject:Digest(releaseNotes) forKey:kUserDefaultsReleaseNotesDigestKey];
+		[NSUserDefaults.standardUserDefaults setObject:Digest(releaseNotes) forKey:kUserDefaultsReleaseNotesDigestKey];
+}
+
+- (void)takeSelectedSegmentFrom:(id)sender
+{
+	if(sender == _segmentedControl)
+		self.selectedPage = _segmentLabels[_segmentedControl.selectedSegment];
+	else if([sender respondsToSelector:@selector(representedObject)])
+		self.selectedPage = [sender representedObject];
 }
 
 - (void)setSelectedPage:(NSString*)pageName
@@ -211,30 +157,28 @@ static NSData* Digest (NSString* someString)
 	_selectedPage = pageName;
 
 	NSDictionary* pages = @{
-		@"About":         @"About",
-		@"Changes":       @"Changes",
-		@"Bundles":       @"Bundles",
-		@"Registration":  @"Registration",
-		@"Legal":         @"Legal",
-		@"Contributions": @"Contributions"
+		@"About":         @"About/About",
+		@"Changes":       @"About/Changes",
+		@"Bundles":       @"About/Bundles",
+		@"Registration":  @"About/Registration",
+		@"Legal":         @"About/Legal",
+		@"Contributions": @"About/Contributions"
 	};
 
 	if(NSString* file = pages[pageName])
 	{
-		if(NSURL* url = [[NSBundle mainBundle] URLForResource:file withExtension:@"html"])
+		if(NSURL* url = [NSBundle.mainBundle URLForResource:file withExtension:@"html"])
 			[self.webView loadRequest:[NSURLRequest requestWithURL:url cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60]];
 
-		[self.window setTitle:pageName];
-		[self.toolbar setSelectedItemIdentifier:pageName];
+		_segmentedControl.selectedSegment = [_segmentLabels indexOfObject:pageName];
 	}
 }
 
 - (void)selectPageAtRelativeOffset:(NSInteger)offset
 {
-	NSArray* allPages = [self toolbarSelectableItemIdentifiers:self.toolbar];
-	NSUInteger index = [allPages indexOfObject:self.selectedPage];
+	NSUInteger index = [_segmentLabels indexOfObject:self.selectedPage];
 	if(index != NSNotFound)
-		self.selectedPage = allPages[(index + allPages.count + offset) % allPages.count];
+		self.selectedPage = _segmentLabels[(index + _segmentLabels.count + offset) % _segmentLabels.count];
 }
 
 - (IBAction)selectNextTab:(id)sender     { [self selectPageAtRelativeOffset:+1]; }
@@ -244,43 +188,23 @@ static NSData* Digest (NSString* someString)
 // = Toolbar Delegate =
 // ====================
 
-- (void)didClickToolbarItem:(id)sender
-{
-	NSString* identifier = nil;
-	if([sender respondsToSelector:@selector(itemIdentifier)])
-		identifier = [sender itemIdentifier];
-	else if([sender respondsToSelector:@selector(representedObject)])
-		identifier = [sender representedObject];
-
-	if(identifier)
-		self.selectedPage = identifier;
-}
-
 - (NSToolbarItem*)toolbar:(NSToolbar*)aToolbar itemForItemIdentifier:(NSString*)anIdentifier willBeInsertedIntoToolbar:(BOOL)flag
 {
 	NSToolbarItem* res = [[NSToolbarItem alloc] initWithItemIdentifier:anIdentifier];
-	[res setLabel:anIdentifier];
-	[res setTarget:self];
-	[res setAction:@selector(didClickToolbarItem:)];
+	if(![anIdentifier isEqualToString:NSToolbarFlexibleSpaceItemIdentifier])
+		res.view = _segmentedControl;
 	return res;
 }
 
 - (NSArray*)toolbarAllowedItemIdentifiers:(NSToolbar*)aToolbar
 {
-	return @[ @"About", @"Changes", @"Bundles", NSToolbarFlexibleSpaceItemIdentifier, @"Registration", @"Legal", @"Contributions" ];
+	return [self toolbarDefaultItemIdentifiers:aToolbar];
 }
 
 - (NSArray*)toolbarDefaultItemIdentifiers:(NSToolbar*)aToolbar
 {
-	return [self toolbarAllowedItemIdentifiers:aToolbar];
+	return @[ NSToolbarFlexibleSpaceItemIdentifier, @"TMSegmentedControlIdentifier", NSToolbarFlexibleSpaceItemIdentifier ];
 }
-
-- (NSArray*)toolbarSelectableItemIdentifiers:(NSToolbar*)aToolbar
-{
-	return @[ @"About", @"Changes", @"Bundles", @"Registration", @"Legal", @"Contributions" ];
-}
-
-// ====================
 
 - (void)updateShowTabMenu:(NSMenu*)aMenu
 {
@@ -290,17 +214,19 @@ static NSData* Digest (NSString* someString)
 		return;
 	}
 
-	char key = 0;
-	for(NSString* label in [self toolbarSelectableItemIdentifiers:self.toolbar])
+	for(NSUInteger i = 0; i < _segmentLabels.count; ++i)
 	{
-		NSMenuItem* item = [aMenu addItemWithTitle:label action:@selector(didClickToolbarItem:) keyEquivalent:key < 9 ? [NSString stringWithFormat:@"%c", '0' + (++key % 10)] : @""];
+		NSString* label = _segmentLabels[i];
+		NSMenuItem* item = [aMenu addItemWithTitle:label action:@selector(takeSelectedSegmentFrom:) keyEquivalent:i < 9 ? [NSString stringWithFormat:@"%c", '1' + (char)i] : @""];
 		[item setRepresentedObject:label];
 		[item setTarget:self];
-		[item setState:[label isEqualToString:[self.toolbar selectedItemIdentifier]] ? NSOnState : NSOffState];
+		[item setState:i == _segmentedControl.selectedSegment ? NSControlStateValueOn : NSControlStateValueOff];
 	}
 }
 
-// ====================
+// =============
+// = WKWebView =
+// =============
 
 static NSDictionary* RemoveOldCommits (NSDictionary* src)
 {
@@ -326,14 +252,14 @@ static NSDictionary* RemoveOldCommits (NSDictionary* src)
 	return res;
 }
 
-- (void)webView:(WebView*)aWebView didFinishLoadForFrame:(WebFrame*)aFrame
+- (void)webView:(WKWebView*)webView didFinishNavigation:(WKNavigation*)navigation
 {
-	if(![[self.toolbar selectedItemIdentifier] isEqualToString:@"Bundles"])
+	if(![_selectedPage isEqualToString:@"Bundles"])
 		return;
 
 	bool first = true;
 	NSMutableString* str = [NSMutableString stringWithString:@"{\"bundles\":["];
-	for(Bundle* bundle in [BundlesManager sharedInstance].bundles)
+	for(Bundle* bundle in BundlesManager.sharedInstance.bundles)
 	{
 		if(!bundle.installed || !bundle.path)
 			continue;
@@ -357,21 +283,51 @@ static NSDictionary* RemoveOldCommits (NSDictionary* src)
 	}
 	[str appendString:@"]}"];
 
-	WebScriptObject* scriptObject = [aWebView windowScriptObject];
-	[scriptObject callWebScriptMethod:@"setJSON" withArguments:@[ str ]];
+	[self.webView evaluateJavaScript:[NSString stringWithFormat:@"setJSON(%@);", [self javaScriptEscapedString:str]] completionHandler:^(id res, NSError* error){ }];
 }
 
-- (void)webView:(WebView*)sender didClearWindowObject:(WebScriptObject*)windowScriptObject forFrame:(WebFrame*)frame
+- (NSString*)javaScriptEscapedString:(NSString*)src
 {
-	AboutWindowJSBridge* bridge = [[AboutWindowJSBridge alloc] init];
-	[windowScriptObject setValue:bridge forKey:@"TextMate"];
+	static NSRegularExpression* const regex = [NSRegularExpression regularExpressionWithPattern:@"['\"\\\\]" options:0 error:nil];
+	NSString* escaped = src ? [regex stringByReplacingMatchesInString:src options:0 range:NSMakeRange(0, src.length) withTemplate:@"\\\\$0"] : @"";
+	escaped = [escaped stringByReplacingOccurrencesOfString:@"\n" withString:@"\\n"];
+	return [NSString stringWithFormat:@"'%@'", escaped];
 }
 
-- (void)webView:(WebView*)sender decidePolicyForNavigationAction:(NSDictionary*)actionInformation request:(NSURLRequest*)request frame:(WebFrame*)frame decisionListener:(id <WebPolicyDecisionListener>)listener
+- (void)webView:(WKWebView*)webView decidePolicyForNavigationAction:(WKNavigationAction*)navigationAction decisionHandler:(void(^)(WKNavigationActionPolicy))decisionHandler
 {
-	if(![[request.URL scheme] isEqualToString:@"file"] && [[NSWorkspace sharedWorkspace] openURL:request.URL])
-		[listener ignore];
-	else if([NSURLConnection canHandleRequest:request])
-		[listener use];
+	if(![navigationAction.request.URL.scheme isEqualToString:@"file"] && [NSWorkspace.sharedWorkspace openURL:navigationAction.request.URL])
+			decisionHandler(WKNavigationActionPolicyCancel);
+	else	decisionHandler(WKNavigationActionPolicyAllow);
+}
+
+- (void)userContentController:(WKUserContentController*)userContentController didReceiveScriptMessage:(WKScriptMessage*)message
+{
+	if(![message.name isEqualToString:@"textmate"])
+	{
+		os_log_error(OS_LOG_DEFAULT, "Message received for unknown message handler: %{public}@", message.name);
+		return;
+	}
+
+	NSString* command     = message.body[@"command"];
+	NSDictionary* payload = message.body[@"payload"];
+
+	if([command isEqualToString:@"log"])
+	{
+		if([payload[@"level"] isEqualToString:@"error"])
+		{
+			static os_log_t log = os_log_create("com.macromates.JavaScript", "error");
+			os_log_error(log, "%{public}@:%{public}@: %{public}@", payload[@"filename"], payload[@"lineno"], payload[@"message"]);
+		}
+		else
+		{
+			static os_log_t log = os_log_create("com.macromates.JavaScript", "log");
+			os_log(log, "%{public}@: %{public}@", self.webView.title, payload[@"message"]);
+		}
+	}
+	else if([command isEqualToString:@"addLicense"])
+	{
+		[LicenseManager.sharedInstance showAddLicenseWindow:self];
+	}
 }
 @end

@@ -7,8 +7,9 @@
 #import <OakAppKit/NSAlert Additions.h>
 #import <OakAppKit/NSImage Additions.h>
 #import <OakAppKit/OakSound.h>
-#import <OakAppKit/OakFileIconImage.h>
+#import <OakAppKit/OakUIConstructionFunctions.h>
 #import <OakTextView/OakDocumentView.h>
+#import <TMFileReference/TMFileReference.h>
 #import <document/OakDocument.h>
 #import <document/OakDocumentController.h>
 #import <BundlesManager/BundlesManager.h>
@@ -23,15 +24,22 @@
 #import <settings/settings.h>
 #import <oak/debug.h>
 
-OAK_DEBUG_VAR(BundleEditor);
-
 @class OakCommand;
 
-@interface BundleEditor () <OakTextViewDelegate>
+@interface BundleEditor () <NSWindowDelegate, OakTextViewDelegate>
 {
-	IBOutlet NSBrowser* browser;
-	IBOutlet OakDocumentView* documentView;
-	NSDrawer* drawer;
+	NSViewController*      _browserViewController;
+	NSViewController*      _documentViewController;
+	NSSplitViewController* _splitViewController;
+	NSViewController*      _propertiesViewController;
+	NSLayoutConstraint*    _propertiesHeightConstraint;
+	NSSplitViewController* _windowSplitViewController;
+
+	CGFloat _maxLabelWidth;
+	CGFloat _minPropertiesViewWidth;
+
+	NSBrowser* browser;
+	OakDocumentView* documentView;
 
 	be::entry_ptr bundles;
 	std::map<bundles::item_ptr, plist::dictionary_t> changes;
@@ -129,7 +137,7 @@ static be::entry_ptr parent_for_column (NSBrowser* aBrowser, NSInteger aColumn, 
 		NSInteger row = [aBrowser selectedRowInColumn:col];
 		if(row == -1)
 		{
-			fprintf(stderr, "*** abort\n");
+			os_log_error(OS_LOG_DEFAULT, "*** abort");
 			return be::entry_ptr();
 		}
 		entry = entry->children()[row];
@@ -140,16 +148,31 @@ static be::entry_ptr parent_for_column (NSBrowser* aBrowser, NSInteger aColumn, 
 @implementation BundleEditor
 + (instancetype)sharedInstance
 {
+	static dispatch_once_t onceToken;
+	dispatch_once(&onceToken, ^{
+		static struct { NSString* name; NSArray* array; } const converters[] =
+		{
+			{ @"OakSaveStringListTransformer",                  @[ @"nop", @"saveActiveFile", @"saveModifiedFiles" ] },
+			{ @"OakInputStringListTransformer",                 @[ @"selection", @"document", @"scope", @"line", @"word", @"character", @"none" ] },
+			{ @"OakInputFormatStringListTransformer",           @[ @"text", @"xml" ] },
+			{ @"OakOutputLocationStringListTransformer",        @[ @"replaceInput", @"replaceDocument", @"atCaret", @"afterInput", @"newWindow", @"toolTip", @"discard", @"replaceSelection" ] },
+			{ @"OakOutputFormatStringListTransformer",          @[ @"text", @"snippet", @"html", @"completionList" ] },
+			{ @"OakOutputCaretStringListTransformer",           @[ @"afterOutput", @"selectOutput", @"interpolateByChar", @"interpolateByLine", @"heuristic" ] },
+		};
+
+		[OakRot13Transformer register];
+		for(auto const& converter : converters)
+			[OakStringListTransformer createTransformerWithName:converter.name andObjectsArray:converter.array];
+	});
+
 	static BundleEditor* sharedInstance = [self new];
 	return sharedInstance;
 }
 
 - (id)init
 {
-	if(self = [super initWithWindowNibName:@"BundleEditor"])
+	if(self = [super initWithWindow:nil])
 	{
-		D(DBF_BundleEditor, bug("\n"););
-
 		struct callback_t : bundles::callback_t
 		{
 			callback_t (BundleEditor* self) : self(self) { }
@@ -160,38 +183,134 @@ static be::entry_ptr parent_for_column (NSBrowser* aBrowser, NSInteger aColumn, 
 
 		static callback_t cb(self);
 		bundles::add_callback(&cb);
+
+		self.window = [NSWindow windowWithContentViewController:self.windowSplitViewController];
+		self.window.delegate = self;
+
+		NSRect r = self.window.screen.visibleFrame;
+		[self.window setFrame:NSInsetRect(r, MAX(0, round((NSWidth(r)-1200)/2)), MAX(0, round((NSHeight(r)-700)/2))) display:NO];
+		self.windowFrameAutosaveName = @"Bundle Editor";
+
+		[self.splitViewController.splitView setPosition:round(NSHeight(self.splitViewController.splitView.frame) / 3) ofDividerAtIndex:0];
+		self.splitViewController.splitView.autosaveName = @"Bundle Editor";
+
+		[self.windowSplitViewController.splitView setPosition:NSWidth(self.windowSplitViewController.splitView.frame) - _minPropertiesViewWidth ofDividerAtIndex:0];
+		self.windowSplitViewController.splitView.autosaveName = @"Bundle Editor Properties";
+
+		bundles = be::bundle_entries();
+		[browser loadColumnZero];
+
+		[self.window makeFirstResponder:browser];
 	}
 	return self;
 }
 
-- (void)windowDidLoad
+- (NSViewController*)browserViewController
 {
-	static struct { NSString* name; NSArray* array; } const converters[] =
+	if(!_browserViewController)
 	{
-		{ @"OakSaveStringListTransformer",                  @[ @"nop", @"saveActiveFile", @"saveModifiedFiles" ] },
-		{ @"OakInputStringListTransformer",                 @[ @"selection", @"document", @"scope", @"line", @"word", @"character", @"none" ] },
-		{ @"OakInputFormatStringListTransformer",           @[ @"text", @"xml" ] },
-		{ @"OakOutputLocationStringListTransformer",        @[ @"replaceInput", @"replaceDocument", @"atCaret", @"afterInput", @"newWindow", @"toolTip", @"discard", @"replaceSelection" ] },
-		{ @"OakOutputFormatStringListTransformer",          @[ @"text", @"snippet", @"html", @"completionList" ] },
-		{ @"OakOutputCaretStringListTransformer",           @[ @"afterOutput", @"selectOutput", @"interpolateByChar", @"interpolateByLine", @"heuristic" ] },
-	};
+		_browserViewController = [[NSViewController alloc] initWithNibName:nil bundle:nil];
 
-	[OakRot13Transformer register];
-	for(auto const& converter : converters)
-		[OakStringListTransformer createTransformerWithName:converter.name andObjectsArray:converter.array];
+		browser = [[NSBrowser alloc] initWithFrame:NSZeroRect];
+		browser.autoresizingMask = NSViewWidthSizable|NSViewHeightSizable;
 
-	drawer = [[NSDrawer alloc] initWithContentSize:NSZeroSize preferredEdge:NSMaxXEdge];
-	[drawer setParentWindow:[self window]];
+		if(@available(macos 11, *))
+		{
+			_browserViewController.view = browser;
+		}
+		else
+		{
+			NSView* clipView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 10, 10)];
+			[clipView addSubview:browser];
+			browser.frame = NSMakeRect(-1, -1, 12, 12);
 
-	bundles = be::bundle_entries();
+			_browserViewController.view = clipView;
+		}
 
-	[browser setDelegate:self];
-	[browser loadColumnZero];
-	[browser setAutohidesScroller:YES];
+		browser.titled                = NO;
+		browser.autohidesScroller     = YES;
+		browser.hasHorizontalScroller = YES;
+		browser.columnResizingType    = NSBrowserUserColumnResizing;
+		browser.defaultColumnWidth    = 180;
+		browser.columnsAutosaveName   = @"OakBundleEditorBrowserColumnWidths";
+		browser.delegate              = self;
+		browser.target                = self;
+		browser.action                = @selector(browserSelectionDidChange:);
+	}
+	return _browserViewController;
+}
 
-	documentView.textView.delegate = self;
+- (NSViewController*)documentViewController
+{
+	if(!_documentViewController)
+	{
+		documentView = [[OakDocumentView alloc] initWithFrame:NSZeroRect];
+		documentView.textView.delegate = self;
 
-	[[self window] makeFirstResponder:browser];
+		_documentViewController = [[NSViewController alloc] initWithNibName:nil bundle:nil];
+		_documentViewController.view = documentView;
+	}
+	return _documentViewController;
+}
+
+- (NSSplitViewController*)splitViewController
+{
+	if(!_splitViewController)
+	{
+		_splitViewController = [[NSSplitViewController alloc] init];
+		_splitViewController.splitView.vertical = NO;
+		_splitViewController.splitView.dividerStyle = NSSplitViewDividerStylePaneSplitter;
+
+		[_splitViewController addSplitViewItem:[NSSplitViewItem splitViewItemWithViewController:self.browserViewController]];
+		[_splitViewController addSplitViewItem:[NSSplitViewItem splitViewItemWithViewController:self.documentViewController]];
+
+		_splitViewController.splitViewItems[0].minimumThickness = 50;
+		_splitViewController.splitViewItems[0].canCollapse      = YES;
+	}
+	return _splitViewController;
+}
+
+- (NSSplitViewController*)windowSplitViewController
+{
+	if(!_windowSplitViewController)
+	{
+		CGFloat maxWidth = 0, maxLabelWidth = 0;
+
+		NSArray<NSString*>* viewControllerNames = @[ @"SharedProperties", @"BundleProperties", @"CommandProperties", @"FileDropProperties", @"SnippetProperties", @"GrammarProperties", @"ThemeProperties", @"MacroProperties" ];
+		for(NSString* name in viewControllerNames)
+		{
+			if(PropertiesViewController* viewController = [[PropertiesViewController alloc] initWithName:name])
+			{
+				if(NSView* view = viewController.view)
+				{
+					maxWidth      = MAX(maxWidth, NSWidth(view.frame) - viewController.labelWidth);
+					maxLabelWidth = MAX(maxLabelWidth, viewController.labelWidth);
+				}
+			}
+		}
+
+		_maxLabelWidth          = maxLabelWidth;
+		_minPropertiesViewWidth = maxLabelWidth + maxWidth;
+
+		_propertiesViewController = [[NSViewController alloc] init];
+		_propertiesViewController.view = [[NSView alloc] initWithFrame:NSZeroRect];
+
+		[_propertiesViewController.view.widthAnchor constraintGreaterThanOrEqualToConstant:_minPropertiesViewWidth].active = YES;
+		_propertiesHeightConstraint = [_propertiesViewController.view.heightAnchor constraintGreaterThanOrEqualToConstant:0];
+
+		// ==========================
+		// = Create Main Split View =
+		// ==========================
+
+		_windowSplitViewController = [[NSSplitViewController alloc] init];
+		_windowSplitViewController.splitView.vertical = YES;
+
+		[_windowSplitViewController addSplitViewItem:[NSSplitViewItem splitViewItemWithViewController:self.splitViewController]];
+		[_windowSplitViewController addSplitViewItem:[NSSplitViewItem splitViewItemWithViewController:_propertiesViewController]];
+
+		_windowSplitViewController.splitViewItems[0].holdingPriority = NSLayoutPriorityDefaultLow - 1;
+	}
+	return _windowSplitViewController;
 }
 
 - (NSString*)scopeAttributes
@@ -242,7 +361,7 @@ static be::entry_ptr parent_for_column (NSBrowser* aBrowser, NSInteger aColumn, 
 - (void)createItemOfType:(bundles::kind_t)aType
 {
 	NSString* path = [[NSBundle bundleForClass:[self class]] pathForResource:info_for(aType).file ofType:@"plist"];
-	if(!path || ![[NSFileManager defaultManager] fileExistsAtPath:path])
+	if(!path || ![NSFileManager.defaultManager fileExistsAtPath:path])
 		return;
 
 	NSInteger row = [browser selectedRowInColumn:0];
@@ -286,7 +405,7 @@ static be::entry_ptr parent_for_column (NSBrowser* aBrowser, NSInteger aColumn, 
 	[typeChooser setMenu:menu];
 	[typeChooser sizeToFit];
 	[alert setAccessoryView:typeChooser];
-	[alert beginSheetModalForWindow:self.window completionHandler:^(NSInteger returnCode){
+	[alert beginSheetModalForWindow:self.window completionHandler:^(NSModalResponse returnCode){
 		if(returnCode == NSAlertFirstButtonReturn)
 			[self createItemOfType:(bundles::kind_t)[[(NSPopUpButton*)[alert accessoryView] selectedItem] tag]];
 	}];
@@ -329,7 +448,7 @@ static be::entry_ptr parent_for_column (NSBrowser* aBrowser, NSInteger aColumn, 
 			std::string itemFolder = path::parent(trashedItem->paths().front());
 			if(trashedItem->kind() == bundles::kItemTypeBundle && trashedItem->paths().size() == 1)
 				itemFolder = path::parent(itemFolder);
-			[[BundlesManager sharedInstance] reloadPath:[NSString stringWithCxxString:itemFolder]];
+			[BundlesManager.sharedInstance reloadPath:[NSString stringWithCxxString:itemFolder]];
 		}
 	}
 }
@@ -399,7 +518,7 @@ static be::entry_ptr parent_for_column (NSBrowser* aBrowser, NSInteger aColumn, 
 		if(!success)
 		{
 			NSAlert* alert = [NSAlert tmAlertWithMessageText:@"Error Parsing Property List" informativeText:@"The property list is not valid.\n\nUnfortunately I am presently unable to point to where the parser failed." buttons:@"OK", nil];
-			[alert beginSheetModalForWindow:self.window completionHandler:^(NSInteger returnCode){ }];
+			[alert beginSheetModalForWindow:self.window completionHandler:^(NSModalResponse returnCode){ }];
 			return NO;
 		}
 	}
@@ -462,7 +581,7 @@ static be::entry_ptr parent_for_column (NSBrowser* aBrowser, NSInteger aColumn, 
 		item->set_plist(pair.second);
 		if(item->save())
 		{
-			[[BundlesManager sharedInstance] reloadPath:[NSString stringWithCxxString:item->paths().front()]];
+			[BundlesManager.sharedInstance reloadPath:[NSString stringWithCxxString:item->paths().front()]];
 		}
 		else
 		{
@@ -474,7 +593,7 @@ static be::entry_ptr parent_for_column (NSBrowser* aBrowser, NSInteger aColumn, 
 	if(!changes.empty())
 	{
 		NSAlert* alert = [NSAlert tmAlertWithMessageText:@"Error Saving Bundle Item" informativeText:@"Sorry, but something went wrong while trying to save your changes. More info may be available via the console." buttons:@"OK", nil];
-		[alert beginSheetModalForWindow:self.window completionHandler:^(NSInteger returnCode){
+		[alert beginSheetModalForWindow:self.window completionHandler:^(NSModalResponse returnCode){
 			if(returnCode == NSAlertSecondButtonReturn) // Discard Changes
 			{
 				changes.clear();
@@ -520,12 +639,16 @@ static be::entry_ptr parent_for_column (NSBrowser* aBrowser, NSInteger aColumn, 
 		NSMenu* menu = [NSMenu new];
 		if(bundles::item_ptr item = entry->represented_item())
 		{
+			NSString* imageName = entry->identifier() == "Menu Actions" ? @"MenuItem" : info_for(item->kind()).file;
+			NSImage* srcImage   = [NSImage imageNamed:imageName inSameBundleAsClass:[self class]];
+
+			cell.image = [NSImage imageWithSize:NSMakeSize(srcImage.size.width + 2, srcImage.size.height) flipped:NO drawingHandler:^BOOL(NSRect dstRect){
+				[srcImage drawInRect:NSMakeRect(NSMinX(dstRect)+2, NSMinY(dstRect), NSWidth(dstRect)-2, NSHeight(dstRect)) fromRect:NSZeroRect operation:NSCompositingOperationCopy fraction:1];
+				return YES;
+			}];
+
 			if(entry->identifier() == "Menu Actions")
-			{
-				[cell setImage:[NSImage imageNamed:@"MenuItem" inSameBundleAsClass:[self class]]];
 				return;
-			}
-			[cell setImage:[NSImage imageNamed:info_for(item->kind()).file inSameBundleAsClass:[self class]]];
 
 			if(item->kind() == bundles::kItemTypeBundle)
 			{
@@ -562,7 +685,7 @@ static be::entry_ptr parent_for_column (NSBrowser* aBrowser, NSInteger aColumn, 
 			std::string const& path = entry->represented_path();
 			if(path != NULL_STR)
 			{
-				[cell setImage:[OakFileIconImage fileIconImageWithPath:[NSString stringWithCxxString:path] size:NSMakeSize(16, 16)]];
+				[cell setImage:[TMFileReference imageForURL:[NSURL fileURLWithPath:[NSFileManager.defaultManager stringWithFileSystemRepresentation:path.data() length:path.size()]] size:NSMakeSize(16, 16)]];
 				[menu addItem:[self createMenuItemForCxxPath:path]];
 			}
 		}
@@ -580,8 +703,8 @@ static be::entry_ptr parent_for_column (NSBrowser* aBrowser, NSInteger aColumn, 
 
 - (void)copyUUID:(NSMenuItem*)sender
 {
-	[[NSPasteboard generalPasteboard] declareTypes:@[ NSStringPboardType ] owner:nil];
-	[[NSPasteboard generalPasteboard] setString:[sender representedObject] forType:NSStringPboardType];
+	[[NSPasteboard generalPasteboard] declareTypes:@[ NSPasteboardTypeString ] owner:nil];
+	[[NSPasteboard generalPasteboard] setString:[sender representedObject] forType:NSPasteboardTypeString];
 }
 
 - (void)exportBundle:(id)sender
@@ -595,14 +718,14 @@ static be::entry_ptr parent_for_column (NSBrowser* aBrowser, NSInteger aColumn, 
 
 		NSSavePanel* savePanel = [NSSavePanel savePanel];
 		[savePanel setNameFieldStringValue:[NSString stringWithCxxString:name + ".tmbundle"]];
-		[savePanel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result) {
-			if(result == NSFileHandlingPanelOKButton)
+		[savePanel beginSheetModalForWindow:self.window completionHandler:^(NSModalResponse result) {
+			if(result == NSModalResponseOK)
 			{
 				NSString* path = [[savePanel.URL filePathURL] path];
-				if([[NSFileManager defaultManager] fileExistsAtPath:path])
+				if([NSFileManager.defaultManager fileExistsAtPath:path])
 				{
 					NSError* error;
-					if(![[NSFileManager defaultManager] removeItemAtPath:path error:&error])
+					if(![NSFileManager.defaultManager removeItemAtPath:path error:&error])
 					{
 						[self.window presentError:error];
 						return;
@@ -632,7 +755,7 @@ static be::entry_ptr parent_for_column (NSBrowser* aBrowser, NSInteger aColumn, 
 	if(![sender respondsToSelector:@selector(representedObject)])
 		return;
 	if(NSString* path = [sender representedObject])
-		[[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[ [NSURL fileURLWithPath:path] ]];
+		[NSWorkspace.sharedWorkspace activateFileViewerSelectingURLs:@[ [NSURL fileURLWithPath:path] ]];
 }
 
 // ====================
@@ -763,7 +886,7 @@ static NSMutableDictionary* DictionaryForPropertyList (plist::dictionary_t const
 	{
 		NSMenuItem* item = [self createMenuItemForCxxPath:path];
 		item.title = [[NSString stringWithCxxString:path] stringByAbbreviatingWithTildeInPath];
-		item.state = NSOffState;
+		item.state = NSControlStateValueOff;
 		[menu addItem:item];
 	}
 	return YES;
@@ -798,7 +921,7 @@ static NSMutableDictionary* DictionaryForPropertyList (plist::dictionary_t const
 	else
 	{
 		self.window.representedFilename = NSHomeDirectory();
-		[self.window standardWindowButton:NSWindowDocumentIconButton].image = [[NSWorkspace sharedWorkspace] iconForFileType:[NSString stringWithCxxString:info.file_type]];
+		[self.window standardWindowButton:NSWindowDocumentIconButton].image = [NSWorkspace.sharedWorkspace iconForFileType:[NSString stringWithCxxString:info.file_type]];
 	}
 
 	plist::dictionary_t const& plist = it != changes.end() ? it->second : bundleItem->plist();
@@ -838,46 +961,49 @@ static NSMutableDictionary* DictionaryForPropertyList (plist::dictionary_t const
 	documentView.document = bundleItemContent;
 	[bundleItemContent addObserver:self forKeyPath:@"documentEdited" options:0 context:nullptr];
 
-	_sharedPropertiesViewController = [[PropertiesViewController alloc] initWithName:@"SharedProperties"];
+	_propertiesHeightConstraint.active = NO;
+	[_propertiesViewController.view.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
+
+	_sharedPropertiesViewController = nil;
 	_extraPropertiesViewController  = nil;
-	[_sharedPropertiesViewController setProperties:_bundleItemProperties];
 
-	if(info.kind == bundles::kItemTypeBundle)
-		_sharedPropertiesViewController = nil;
+	NSView* contentView = _propertiesViewController.view;
+	CGFloat maxY = NSHeight(contentView.frame);
 
-	NSView* sharedView = [_sharedPropertiesViewController view];
+	if(info.kind != bundles::kItemTypeBundle)
+	{
+		_sharedPropertiesViewController = [[PropertiesViewController alloc] initWithName:@"SharedProperties"];
+		[_sharedPropertiesViewController setProperties:_bundleItemProperties];
+
+		NSView* propertiesView = [_sharedPropertiesViewController view];
+		maxY -= NSHeight(propertiesView.frame);
+		CGFloat indent = _maxLabelWidth - _sharedPropertiesViewController.labelWidth;
+		[propertiesView setFrame:NSMakeRect(indent, maxY, NSWidth(contentView.frame) - indent, NSHeight(propertiesView.frame))];
+		[contentView addSubview:propertiesView];
+	}
+
 	if(info.view_controller)
 	{
 		_extraPropertiesViewController = [[PropertiesViewController alloc] initWithName:info.view_controller];
 		[_extraPropertiesViewController setProperties:_bundleItemProperties];
+
 		NSView* extraView = [_extraPropertiesViewController view];
-
-		CGFloat delta = _extraPropertiesViewController.indent - _sharedPropertiesViewController.indent;
-		if(delta > 0)
-				[sharedView setFrame:NSOffsetRect(sharedView.frame, delta, 0)];
-		else	[extraView setFrame:NSOffsetRect(extraView.frame, -delta, 0)];
-
-		NSView* contentView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, std::max(NSMaxX(sharedView.frame) + 1, NSMaxX(extraView.frame) + 1), NSHeight(sharedView.frame) + NSHeight(extraView.frame))];
-		[sharedView setAutoresizingMask:NSViewMinXMargin|NSViewMinYMargin];
-		[extraView setAutoresizingMask:NSViewMinXMargin|NSViewMinYMargin];
-
-		[sharedView setFrame:NSOffsetRect(sharedView.frame, 0, NSHeight(extraView.frame))];
-		[contentView addSubview:sharedView];
+		maxY -= NSHeight(extraView.frame);
+		CGFloat indent = _maxLabelWidth - _extraPropertiesViewController.labelWidth;
+		[extraView setFrame:NSMakeRect(indent, maxY, NSWidth(contentView.frame) - indent, NSHeight(extraView.frame))];
 		[contentView addSubview:extraView];
+	}
 
-		[drawer setContentView:[[NSView alloc] initWithFrame:NSZeroRect]];
-		[drawer setContentSize:contentView.frame.size];
-		[drawer setContentView:contentView];
-		[drawer open:self];
-	}
-	else
+	_propertiesHeightConstraint.constant = NSHeight(contentView.frame) + -maxY;
+
+	if(maxY < 0)
 	{
-		[sharedView setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
-		[drawer setContentSize:sharedView.frame.size];
-		[drawer setContentView:sharedView];
-		[drawer open:self];
+		NSRect frame = NSOffsetRect(contentView.window.frame, 0, maxY);
+		frame.size.height += -maxY;
+		[contentView.window setFrame:frame display:YES animate:YES];
 	}
-	[[[drawer contentView] window] recalculateKeyViewLoop];
+
+	_propertiesHeightConstraint.active = YES;
 }
 
 static NSString* DescriptionForChanges (std::map<bundles::item_ptr, plist::dictionary_t> const& changes)
@@ -912,7 +1038,7 @@ static NSString* DescriptionForChanges (std::map<bundles::item_ptr, plist::dicti
 	[alert setMessageText:DescriptionForChanges(changes)];
 	[alert setInformativeText:@"Your changes will be lost if you don’t save them."];
 	[alert addButtons:@"Save", @"Cancel", @"Don’t Save", nil];
-	[alert beginSheetModalForWindow:self.window completionHandler:^(NSInteger returnCode){
+	[alert beginSheetModalForWindow:self.window completionHandler:^(NSModalResponse returnCode){
 		if(returnCode != NSAlertSecondButtonReturn) // Not "Cancel"
 		{
 			if(returnCode == NSAlertFirstButtonReturn) // "Save"

@@ -2,6 +2,8 @@
 #import "FSEventsManager.h"
 #import "drivers/api.h"
 #import <scm/scm.h>
+#import <ns/ns.h>
+#import <TMFileReference/TMFileReference.h>
 
 namespace scm
 {
@@ -19,9 +21,10 @@ namespace scm
 	BOOL _updating;
 	NSTimer* _updateTimer;
 	NSDate* _noUpdateBefore;
+	NSMutableSet<TMFileReference*>* _fileReferences;
 }
 @property (nonatomic, readwrite) std::map<std::string, scm::status::type> status;
-@property (nonatomic, readwrite) std::map<std::string, std::string> variables;
+@property (nonatomic, readwrite) NSDictionary<NSString*, NSString*>* variables;
 @property (nonatomic, readonly) scm::driver_t const* driver;
 @property (nonatomic, readonly) NSMutableArray<SCMRepositoryObserver*>* observers;
 @property (nonatomic) id fsEventsObserver;
@@ -171,18 +174,39 @@ namespace scm
 
 	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
 		std::map<std::string, scm::status::type> const status = driver->status(url.fileSystemRepresentation);
-		std::map<std::string, std::string> const variables    = driver->variables(url.fileSystemRepresentation);
+
+		NSMutableDictionary* variables = [NSMutableDictionary dictionary];
+		for(auto pair : driver->variables(url.fileSystemRepresentation))
+			variables[to_ns(pair.first)] = to_ns(pair.second);
+
 		dispatch_async(dispatch_get_main_queue(), ^{
 			[weakSelf updateStatus:status variables:variables];
 		});
 	});
 }
 
-- (void)updateStatus:(std::map<std::string, scm::status::type> const&)status variables:(std::map<std::string, std::string> const&)variables
+- (void)updateStatus:(std::map<std::string, scm::status::type> const&)status variables:(NSDictionary<NSString*, NSString*>*)variables
 {
 	_status    = status;
 	_variables = variables;
 	_hasStatus = YES;
+
+	NSMutableSet<TMFileReference*>* fileReferences = [NSMutableSet set];
+	for(auto pair : _status)
+	{
+		if(pair.second != scm::status::none)
+		{
+			NSString* path = [NSFileManager.defaultManager stringWithFileSystemRepresentation:pair.first.data() length:pair.first.size()];
+			TMFileReference* fileReference = [TMFileReference fileReferenceWithURL:[NSURL fileURLWithPath:path]];
+			fileReference.SCMStatus = pair.second;
+			[fileReferences addObject:fileReference];
+			[_fileReferences removeObject:fileReference];
+		}
+	}
+
+	for(TMFileReference* fileReference in _fileReferences)
+		fileReference.SCMStatus = scm::status::none;
+	_fileReferences = fileReferences;
 
 	for(SCMRepositoryObserver* observer in [_observers copy])
 		observer.handler(self);
@@ -302,7 +326,7 @@ namespace scm
 		}
 
 		NSNumber* isVolume;
-		if([url getResourceValue:&isVolume forKey:NSURLIsVolumeKey error:nil] && [isVolume boolValue])
+		if([url getResourceValue:&isVolume forKey:NSURLIsVolumeKey error:nil] && isVolume.boolValue)
 			break;
 
 		NSURL* parentURL;

@@ -1,11 +1,8 @@
 #import "Private.h"
-#import <OakAppKit/NSMenu Additions.h>
 #import <OakAppKit/NSMenuItem Additions.h>
 #import <OakFoundation/NSString Additions.h>
 #import <ns/ns.h>
 #import <oak/debug.h>
-
-OAK_DEBUG_VAR(BundleMenu);
 
 @interface NSObject (HasSelection)
 - (BOOL)hasSelection;
@@ -26,7 +23,6 @@ OAK_DEBUG_VAR(BundleMenu);
 
 - (void)menuNeedsUpdate:(NSMenu*)aMenu
 {
-	D(DBF_BundleMenu, bug("\n"););
 	[aMenu removeAllItems];
 
 	scope::context_t scope = "";
@@ -46,7 +42,7 @@ OAK_DEBUG_VAR(BundleMenu);
 				NSMenuItem* menuItem = [aMenu addItemWithTitle:[NSString stringWithCxxString:item->name()] action:NULL keyEquivalent:@""];
 
 				menuItem.submenu = [[NSMenu alloc] initWithTitle:[NSString stringWithCxxString:item->uuid()]];
-				menuItem.submenu.delegate = [BundleMenuDelegate sharedInstance];
+				menuItem.submenu.delegate = BundleMenuDelegate.sharedInstance;
 			}
 			break;
 

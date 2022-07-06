@@ -1,7 +1,4 @@
 #import "FileItem.h"
-#import "FileItemImage.h"
-#import "SCMManager.h"
-#import <OakAppKit/NSImage Additions.h>
 #import <OakAppKit/OakFinderTag.h>
 #import <OakFoundation/OakFoundation.h>
 #import <Preferences/Keys.h>
@@ -10,25 +7,8 @@
 NSURL* const kURLLocationComputer  = [[NSURL alloc] initWithString:@"computer:///"];
 NSURL* const kURLLocationFavorites = [[NSURL alloc] initFileURLWithPath:[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/TextMate/Favorites"] isDirectory:YES];
 
-@implementation NSURL (CompatibilityWrapper)
-- (BOOL)tmHasDirectoryPath
-{
-	if([self respondsToSelector:@selector(hasDirectoryPath)])
-		return self.hasDirectoryPath; // MAC_OS_X_VERSION_10_11
-
-	NSString* urlString = self.absoluteString;
-	NSRange range = [urlString rangeOfCharacterFromSet:[NSCharacterSet characterSetWithCharactersInString:@"?;"]];
-	if(range.location != NSNotFound)
-		urlString = [urlString substringToIndex:range.location];
-	return [urlString hasSuffix:@"/"];
-}
-@end
-
 @interface FileItem ()
 @property (nonatomic, readonly) BOOL alwaysShowFileExtension;
-@property (nonatomic, readwrite) NSImage* image;
-@property (nonatomic, readwrite) scm::status::type SCMStatus;
-@property (nonatomic) id SCMStatusObserver;
 @end
 
 static NSMutableDictionary* SchemeToClass;
@@ -62,42 +42,15 @@ static NSMutableDictionary* SchemeToClass;
 	{
 		self.URL = url;
 
-		NSNumber* flag;
-		BOOL disableSCMStatus = [url getResourceValue:&flag forKey:@"org.textmate.disable-scm-status" error:nil] && [flag boolValue];
-
 		[self updateFileProperties];
-		[self addSCMStatusObserver:url.isFileURL && !disableSCMStatus];
 	}
 	return self;
-}
-
-- (void)dealloc
-{
-	[self addSCMStatusObserver:NO];
-}
-
-- (void)addSCMStatusObserver:(BOOL)flag
-{
-	if(_SCMStatusObserver)
-	{
-		[SCMManager.sharedInstance removeObserver:_SCMStatusObserver];
-		_SCMStatusObserver = nil;
-	}
-
-	if(flag)
-	{
-		__weak FileItem* weakSelf = self;
-		_SCMStatusObserver = [SCMManager.sharedInstance addObserverToFileAtURL:_URL usingBlock:^(scm::status::type newStatus){
-			weakSelf.SCMStatus = newStatus;
-			weakSelf.missing   = newStatus == scm::status::deleted;
-		}];
-	}
 }
 
 - (BOOL)canRename
 {
 	NSNumber* flag;
-	return _URL.isFileURL && !self.isMissing && (![_URL getResourceValue:&flag forKey:NSURLIsVolumeKey error:nil] || ![flag boolValue]);
+	return _URL.isFileURL && !self.isMissing && (![_URL getResourceValue:&flag forKey:NSURLIsVolumeKey error:nil] || !flag.boolValue);
 }
 
 - (void)updateFileProperties
@@ -107,12 +60,12 @@ static NSMutableDictionary* SchemeToClass;
 
 	NSNumber* flag;
 
-	self.hidden          = [_URL getResourceValue:&flag forKey:NSURLIsHiddenKey error:nil] && [flag boolValue];
-	self.hiddenExtension = [_URL getResourceValue:&flag forKey:NSURLHasHiddenExtensionKey error:nil] && [flag boolValue];
-	self.symbolicLink    = [_URL getResourceValue:&flag forKey:NSURLIsSymbolicLinkKey error:nil] && [flag boolValue];
-	self.package         = !_symbolicLink && [_URL getResourceValue:&flag forKey:NSURLIsPackageKey error:nil] && [flag boolValue];
-	self.linkToDirectory = _symbolicLink && [self.resolvedURL getResourceValue:&flag forKey:NSURLIsDirectoryKey error:nil] && [flag boolValue];
-	self.linkToPackage   = _symbolicLink && [self.resolvedURL getResourceValue:&flag forKey:NSURLIsPackageKey error:nil] && [flag boolValue];;
+	self.hidden          = [_URL getResourceValue:&flag forKey:NSURLIsHiddenKey error:nil] && flag.boolValue;
+	self.hiddenExtension = [_URL getResourceValue:&flag forKey:NSURLHasHiddenExtensionKey error:nil] && flag.boolValue;
+	self.symbolicLink    = [_URL getResourceValue:&flag forKey:NSURLIsSymbolicLinkKey error:nil] && flag.boolValue;
+	self.package         = !_symbolicLink && [_URL getResourceValue:&flag forKey:NSURLIsPackageKey error:nil] && flag.boolValue;
+	self.linkToDirectory = _symbolicLink && [self.resolvedURL getResourceValue:&flag forKey:NSURLIsDirectoryKey error:nil] && flag.boolValue;
+	self.linkToPackage   = _symbolicLink && [self.resolvedURL getResourceValue:&flag forKey:NSURLIsPackageKey error:nil] && flag.boolValue;
 	self.finderTags      = [OakFinderTagManager finderTagsForURL:self.URL];
 	self.missing         = _missing && ![NSFileManager.defaultManager fileExistsAtPath:_URL.path];
 }
@@ -143,7 +96,7 @@ static NSMutableDictionary* SchemeToClass;
 
 - (BOOL)isDirectory
 {
-	return _URL.tmHasDirectoryPath;
+	return _URL.hasDirectoryPath;
 }
 
 - (NSString*)displayName
@@ -153,24 +106,25 @@ static NSMutableDictionary* SchemeToClass;
 
 - (NSString*)localizedName
 {
-	if(!_localizedName && _URL.isFileURL)
+	if(!_localizedName)
 	{
 		NSString* name;
-		if([_URL getResourceValue:&name forKey:NSURLLocalizedNameKey error:nil])
+		if(_URL.isFileURL)
 		{
-			_localizedName = name;
-			if(_hiddenExtension && self.alwaysShowFileExtension && OakNotEmptyString(_URL.pathExtension))
-				_localizedName = [_localizedName stringByAppendingPathExtension:_URL.pathExtension];
+			NSError* error;
+			if([_URL getResourceValue:&name forKey:NSURLLocalizedNameKey error:&error])
+			{
+				if(_hiddenExtension && self.alwaysShowFileExtension && OakNotEmptyString(_URL.pathExtension))
+					name = [name stringByAppendingPathExtension:_URL.pathExtension];
+			}
+			else
+			{
+				os_log_error(OS_LOG_DEFAULT, "No NSURLLocalizedNameKey for %{public}@: %{public}@", _URL, error);
+			}
 		}
+		_localizedName = name ?: _URL.lastPathComponent;
 	}
 	return _localizedName ?: _URL.lastPathComponent;
-}
-
-- (NSImage*)image
-{
-	if(!_image)
-		_image = CreateIconImageForURL(_URL, _modified, _missing, self.isDirectory || _linkToDirectory, _symbolicLink, _SCMStatus);
-	return _image;
 }
 
 - (NSURL*)resolvedURL
@@ -182,7 +136,7 @@ static NSMutableDictionary* SchemeToClass;
 		url = [url URLByResolvingSymlinksInPath];
 
 		NSNumber* flag;
-		if([url getResourceValue:&flag forKey:NSURLIsSymbolicLinkKey error:nil] && [flag boolValue])
+		if([url getResourceValue:&flag forKey:NSURLIsSymbolicLinkKey error:nil] && flag.boolValue)
 		{
 			NSError* error;
 			if(NSString* path = [NSFileManager.defaultManager destinationOfSymbolicLinkAtPath:_URL.path error:&error])
@@ -199,7 +153,7 @@ static NSMutableDictionary* SchemeToClass;
 		NSNumber* flag;
 		NSURL* parentURL;
 
-		if([_URL getResourceValue:&flag forKey:NSURLIsVolumeKey error:nil] && [flag boolValue])
+		if([_URL getResourceValue:&flag forKey:NSURLIsVolumeKey error:nil] && flag.boolValue)
 			return kURLLocationComputer;
 		else if([_URL getResourceValue:&parentURL forKey:NSURLParentDirectoryURLKey error:nil] && parentURL)
 			return parentURL;
@@ -209,26 +163,13 @@ static NSMutableDictionary* SchemeToClass;
 
 - (BOOL)isApplication
 {
-	// NSURLIsApplicationKey requires MAC_OS_X_VERSION_10_11
-
-	LSItemInfoRecord itemInfo;
-	if(_URL.isFileURL && LSCopyItemInfoForURL((__bridge CFURLRef)_URL, kLSRequestBasicFlagsOnly, &itemInfo) == noErr)
-	{
-		OptionBits flags = itemInfo.flags;
-		if(flags & kLSItemInfoIsApplication)
-			return YES;
-	}
-	return NO;
+	NSNumber* flag;
+	return _URL.isFileURL && [_URL getResourceValue:&flag forKey:NSURLIsApplicationKey error:nil] && flag.boolValue;
 }
 
 // ===========================================
 // = Setters that invalidate other propertes =
 // ===========================================
-
-+ (NSSet*)keyPathsForValuesAffectingImage
-{
-	return [NSSet setWithObjects:@"URL", @"linkToDirectory", @"missing", @"modified", @"SCMStatus", @"symbolicLink", nil];
-}
 
 + (NSSet*)keyPathsForValuesAffectingDisplayName
 {
@@ -246,14 +187,11 @@ static NSMutableDictionary* SchemeToClass;
 	{
 		_URL           = newURL;
 		_localizedName = nil;
-		_image         = nil;
-
-		[self addSCMStatusObserver:_SCMStatusObserver ? YES : NO];
 
 		for(FileItem* child in _children)
 		{
 			if(child.URL.isFileURL && _URL.isFileURL)
-				child.URL = [_URL URLByAppendingPathComponent:child.URL.lastPathComponent isDirectory:child.URL.tmHasDirectoryPath];
+				child.URL = [_URL URLByAppendingPathComponent:child.URL.lastPathComponent isDirectory:child.URL.hasDirectoryPath];
 		}
 	}
 
@@ -266,51 +204,6 @@ static NSMutableDictionary* SchemeToClass;
 	{
 		_hiddenExtension = flag;
 		_localizedName   = nil;
-	}
-}
-
-- (void)setLinkToDirectory:(BOOL)flag
-{
-	if(_linkToDirectory != flag)
-	{
-		_linkToDirectory = flag;
-		_image           = nil;
-	}
-}
-
-- (void)setMissing:(BOOL)flag
-{
-	if(_missing != flag)
-	{
-		_missing = flag;
-		_image   = nil;
-	}
-}
-
-- (void)setModified:(BOOL)flag
-{
-	if(_modified != flag)
-	{
-		_modified = flag;
-		_image    = nil;
-	}
-}
-
-- (void)setSCMStatus:(scm::status::type)newStatus
-{
-	if(_SCMStatus != newStatus)
-	{
-		_SCMStatus = newStatus;
-		_image     = nil;
-	}
-}
-
-- (void)setSymbolicLink:(BOOL)flag
-{
-	if(_symbolicLink != flag)
-	{
-		_symbolicLink = flag;
-		_image        = nil;
 	}
 }
 @end

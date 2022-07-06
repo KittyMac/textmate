@@ -9,7 +9,6 @@
 
 @interface OakEncodingSaveOptionsViewController : NSViewController <NSOpenSavePanelDelegate>
 {
-	OBJC_WATCH_LEAKS(OakEncodingSaveOptionsViewController);
 	encoding::type _encodingOptions;
 }
 @property (nonatomic) NSString* fileType;
@@ -63,7 +62,7 @@
 	NSView* containerView = [[NSView alloc] initWithFrame:NSZeroRect];
 	OakAddAutoLayoutViewsToSuperview([views allValues], containerView);
 
-	[containerView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[encodingLabel]-[encodingPopUp]-[lineEndingsPopUp]-(>=0)-|" options:NSLayoutFormatAlignAllBaseline metrics:nil views:views]];
+	[containerView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-[encodingLabel]-[encodingPopUp]-[lineEndingsPopUp]-(>=20)-|" options:NSLayoutFormatAlignAllBaseline metrics:nil views:views]];
 	[containerView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(8)-[encodingPopUp]-(8)-|" options:NSLayoutFormatAlignAllLeading metrics:nil views:views]];
 
 	containerView.frame = (NSRect){ NSZeroPoint, [containerView fittingSize] };
@@ -117,9 +116,9 @@
 	[savePanel setAccessoryView:optionsViewController.view];
 	[optionsViewController updateSettings:[optionsViewController encodingForURL:[savePanel URL]]];
 	savePanel.delegate = optionsViewController;
-	[savePanel beginSheetModalForWindow:aWindow completionHandler:^(NSInteger result) {
+	[savePanel beginSheetModalForWindow:aWindow completionHandler:^(NSModalResponse result) {
 		savePanel.delegate = nil;
-		NSString* path = result == NSFileHandlingPanelOKButton ? [[savePanel.URL filePathURL] path] : nil;
+		NSString* path = result == NSModalResponseOK ? [[savePanel.URL filePathURL] path] : nil;
 		encoding::type encoding(to_s(optionsViewController.lineEndings), to_s(optionsViewController.encoding));
 		aCompletionHandler(path, encoding);
 	}];

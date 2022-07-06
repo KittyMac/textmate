@@ -1,7 +1,3 @@
-build
 build.ninja
-cache
-Applications/TextMate/resources/DefaultBundles.tbz
+local.rave
 Frameworks/license/src/revoked_serials.cc
-*.capnp.c++
-*.capnp.h

@@ -41,7 +41,7 @@ NSTextField* OakCreateLabel (NSString* label, NSFont* font, NSTextAlignment alig
 
 NSButton* OakCreateCheckBox (NSString* label)
 {
-	if(@available(macos 10.12, *))
+	if(@available(macos 10.14, *))
 	{
 		NSButton* res = [NSButton checkboxWithTitle:(label ?: @"") target:nil action:nil];
 		// When we have a row that only contains checkboxes (e.g. Find options), nothing restrains the height of that row
@@ -51,7 +51,7 @@ NSButton* OakCreateCheckBox (NSString* label)
 
 	NSButton* res = [[NSButton alloc] initWithFrame:NSZeroRect];
 	[res setContentHuggingPriority:NSLayoutPriorityDefaultHigh forOrientation:NSLayoutConstraintOrientationVertical];
-	res.buttonType = NSSwitchButton;
+	res.buttonType = NSButtonTypeSwitch;
 	res.font       = OakControlFont();
 	res.title      = label;
 	return res;
@@ -59,19 +59,9 @@ NSButton* OakCreateCheckBox (NSString* label)
 
 NSButton* OakCreateButton (NSString* label, NSBezelStyle bezel)
 {
-	if(@available(macos 10.12, *))
-	{
-		NSButton* res = [NSButton buttonWithTitle:label target:nil action:nil];
-		if(bezel != NSRoundedBezelStyle)
-			res.bezelStyle = bezel;
-		return res;
-	}
-
-	NSButton* res = [[NSButton alloc] initWithFrame:NSZeroRect];
-	res.bezelStyle = bezel;
-	res.buttonType = NSMomentaryPushInButton;
-	res.font       = OakControlFont();
-	res.title      = label;
+	NSButton* res = [NSButton buttonWithTitle:label target:nil action:nil];
+	if(bezel != NSBezelStyleRounded)
+		res.bezelStyle = bezel;
 	return res;
 }
 
@@ -147,18 +137,18 @@ OakRolloverButton* OakCreateCloseButton (NSString* accessibilityLabel)
 {
 	if(self.window)
 	{
-		[[NSNotificationCenter defaultCenter] removeObserver:self name:NSWindowDidBecomeMainNotification object:self.window];
-		[[NSNotificationCenter defaultCenter] removeObserver:self name:NSWindowDidResignMainNotification object:self.window];
-		[[NSNotificationCenter defaultCenter] removeObserver:self name:NSWindowDidBecomeKeyNotification object:self.window];
-		[[NSNotificationCenter defaultCenter] removeObserver:self name:NSWindowDidResignKeyNotification object:self.window];
+		[NSNotificationCenter.defaultCenter removeObserver:self name:NSWindowDidBecomeMainNotification object:self.window];
+		[NSNotificationCenter.defaultCenter removeObserver:self name:NSWindowDidResignMainNotification object:self.window];
+		[NSNotificationCenter.defaultCenter removeObserver:self name:NSWindowDidBecomeKeyNotification object:self.window];
+		[NSNotificationCenter.defaultCenter removeObserver:self name:NSWindowDidResignKeyNotification object:self.window];
 	}
 
 	if(newWindow)
 	{
-		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(windowDidChangeMainOrKey:) name:NSWindowDidBecomeMainNotification object:newWindow];
-		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(windowDidChangeMainOrKey:) name:NSWindowDidResignMainNotification object:newWindow];
-		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(windowDidChangeMainOrKey:) name:NSWindowDidBecomeKeyNotification object:newWindow];
-		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(windowDidChangeMainOrKey:) name:NSWindowDidResignKeyNotification object:newWindow];
+		[NSNotificationCenter.defaultCenter addObserver:self selector:@selector(windowDidChangeMainOrKey:) name:NSWindowDidBecomeMainNotification object:newWindow];
+		[NSNotificationCenter.defaultCenter addObserver:self selector:@selector(windowDidChangeMainOrKey:) name:NSWindowDidResignMainNotification object:newWindow];
+		[NSNotificationCenter.defaultCenter addObserver:self selector:@selector(windowDidChangeMainOrKey:) name:NSWindowDidBecomeKeyNotification object:newWindow];
+		[NSNotificationCenter.defaultCenter addObserver:self selector:@selector(windowDidChangeMainOrKey:) name:NSWindowDidResignKeyNotification object:newWindow];
 	}
 
 	self.active = ([newWindow styleMask] & NSWindowStyleMaskFullScreen) || [newWindow isMainWindow] || [newWindow isKeyWindow];
@@ -196,24 +186,18 @@ OakRolloverButton* OakCreateCloseButton (NSString* accessibilityLabel)
 }
 
 - (void)setActiveBackgroundColor:(NSColor*)aColor             { self.activeBackgroundValue = aColor;    }
-- (void)setActiveBackgroundImage:(NSImage*)anImage            { self.activeBackgroundValue = anImage;   }
 - (void)setActiveBackgroundGradient:(NSGradient*)aGradient    { self.activeBackgroundValue = aGradient; }
 - (void)setInactiveBackgroundColor:(NSColor*)aColor           { self.inactiveBackgroundValue = aColor;    }
-- (void)setInactiveBackgroundImage:(NSImage*)anImage          { self.inactiveBackgroundValue = anImage;   }
 - (void)setInactiveBackgroundGradient:(NSGradient*)aGradient  { self.inactiveBackgroundValue = aGradient; }
 
 - (NSColor*)activeBackgroundColor          { return [_activeBackgroundValue isKindOfClass:[NSColor class]]      ? _activeBackgroundValue   : nil; }
-- (NSImage*)activeBackgroundImage          { return [_activeBackgroundValue isKindOfClass:[NSImage class]]      ? _activeBackgroundValue   : nil; }
 - (NSGradient*)activeBackgroundGradient    { return [_activeBackgroundValue isKindOfClass:[NSGradient class]]   ? _activeBackgroundValue   : nil; }
 - (NSColor*)inactiveBackgroundColor        { return [_inactiveBackgroundValue isKindOfClass:[NSColor class]]    ? _inactiveBackgroundValue : nil; }
-- (NSImage*)inactiveBackgroundImage        { return [_inactiveBackgroundValue isKindOfClass:[NSImage class]]    ? _inactiveBackgroundValue : nil; }
 - (NSGradient*)inactiveBackgroundGradient  { return [_inactiveBackgroundValue isKindOfClass:[NSGradient class]] ? _inactiveBackgroundValue : nil; }
 
 - (NSSize)intrinsicContentSize
 {
-	if(NSImage* image = self.activeBackgroundImage ?: self.inactiveBackgroundImage)
-			return image.size;
-	else	return NSMakeSize(NSViewNoInstrinsicMetric, NSViewNoInstrinsicMetric);
+	return NSMakeSize(NSViewNoIntrinsicMetric, NSViewNoIntrinsicMetric);
 }
 
 - (void)setStyle:(OakBackgroundFillViewStyle)aStyle
@@ -251,25 +235,6 @@ OakRolloverButton* OakCreateCloseButton (NSString* accessibilityLabel)
 			self.inactiveBackgroundGradient = [[NSGradient alloc] initWithStartingColor:[NSColor colorWithCalibratedWhite:0.915 alpha:1] endingColor:[NSColor colorWithCalibratedWhite:0.915 alpha:1]];
 		}
 	}
-
-	if(self.style == OakBackgroundFillViewStyleDivider)
-	{
-		if(@available(macos 10.14, *))
-		{
-			self.activeBackgroundColor   = [NSColor separatorColor];
-			self.inactiveBackgroundColor = nil;
-		}
-		else
-		{
-			self.activeBackgroundColor   = [NSColor colorWithCalibratedWhite:0.500 alpha:1];
-			self.inactiveBackgroundColor = [NSColor colorWithCalibratedWhite:0.750 alpha:1];
-		}
-	}
-
-	if(self.style == OakBackgroundFillViewStyleDarkDivider)
-	{
-		self.activeBackgroundColor = [NSColor tmDarkDividerColor];
-	}
 }
 
 - (void)drawRect:(NSRect)aRect
@@ -285,15 +250,6 @@ OakRolloverButton* OakCreateCloseButton (NSString* accessibilityLabel)
 	{
 		NSGradient* gradient = value;
 		[gradient drawInRect:self.bounds angle:270];
-	}
-	else if([value isKindOfClass:[NSImage class]])
-	{
-		NSImage* image = value;
-		[[NSColor colorWithPatternImage:image] set];
-		CGContextRef context = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
-		CGAffineTransform affineTransform = CGContextGetCTM(context);
-		CGContextSetPatternPhase(context, CGSizeMake(affineTransform.tx, affineTransform.ty));
-		NSRectFillUsingOperation(aRect, NSCompositingOperationSourceOver);
 	}
 	else if([value isKindOfClass:[NSColor class]])
 	{
@@ -313,70 +269,33 @@ OakBackgroundFillView* OakCreateVerticalLine (OakBackgroundFillViewStyle style)
 	return view;
 }
 
-OakBackgroundFillView* OakCreateHorizontalLine (OakBackgroundFillViewStyle style)
-{
-	OakBackgroundFillView* view = [[OakBackgroundFillView alloc] initWithFrame:NSZeroRect];
-	view.style = style;
-	[view addConstraint:[NSLayoutConstraint constraintWithItem:view attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:1]];
-	view.translatesAutoresizingMaskIntoConstraints = NO;
-	return view;
-}
-
-NSView* OakCreateDividerImageView ()
+NSView* OakCreateNSBoxSeparator ()
 {
 	NSBox* box = [[NSBox alloc] initWithFrame:NSZeroRect];
 	box.boxType = NSBoxSeparator;
-
-	NSDictionary* views = @{
-		@"box": box,
-	};
-
-	NSView* contentView = [[NSView alloc] initWithFrame:NSZeroRect];
-	OakAddAutoLayoutViewsToSuperview(views.allValues, contentView);
-
-	[contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[box(==1)]|" options:0 metrics:nil views:views]];
-	[contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:[box(==16)]" options:0 metrics:nil views:views]];
-	[contentView addConstraint:[NSLayoutConstraint constraintWithItem:box attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:contentView attribute:NSLayoutAttributeCenterY multiplier:1 constant:0]];
-
-	return contentView;
+	return box;
 }
 
-void OakSetupKeyViewLoop (NSArray* superviews, BOOL setFirstResponder)
+void OakSetupKeyViewLoop (NSArray<NSView*>* superviews)
 {
-	std::set<id> seen;
+	std::set<NSView*> seen;
 	for(NSView* candidate in superviews)
 		seen.insert(candidate);
 
-	NSMutableArray* views = [NSMutableArray new];
+	NSMutableArray<NSView*>* views = [NSMutableArray new];
 	for(NSView* view in superviews)
 	{
-		if([view isEqual:[NSNull null]])
-			continue;
-
 		[views addObject:view];
 		NSView* subview = view;
 		while((subview = subview.nextKeyView) && [subview isDescendantOf:view] && seen.insert(subview).second)
 			[views addObject:subview];
 	}
 
-	if(views.count == 1)
-	{
-		[views.firstObject setNextKeyView:nil];
-	}
-	else
-	{
-		for(size_t i = 0; i < views.count; ++i)
-			[views[i] setNextKeyView:views[(i + 1) % views.count]];
-	}
-
-	if(setFirstResponder)
-	{
-		if(NSView* view = views.firstObject)
-			view.window.initialFirstResponder = view;
-	}
+	for(NSUInteger i = 0; i < views.count; ++i)
+		views[i].nextKeyView = views.count == 1 ? nil : views[(i+1) % views.count];
 }
 
-void OakAddAutoLayoutViewsToSuperview (NSArray* views, NSView* superview)
+void OakAddAutoLayoutViewsToSuperview (NSArray<NSView*>* views, NSView* superview)
 {
 	for(NSView* view in views)
 	{
