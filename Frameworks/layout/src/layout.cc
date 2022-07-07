@@ -534,6 +534,15 @@ namespace ng
 			_pre_refresh_selections = rects_for_ranges(selection, kRectsIncludeSelections);
 			_pre_refresh_revision   = _buffer.revision();
 			_pre_refresh_caret      = selection.last().last.index;
+			
+			for(auto const& range : selection) 
+			{
+				for(auto const& rect : rects_for_ranges(range, kRectsIncludeCarets))
+				{
+					CGRect lineRect = full_width(rect);
+					_pre_refresh_highlight_interior.push_back(lineRect);
+				}
+			}
 
 			for(auto const& range : highlightRanges)
 			{
@@ -821,11 +830,12 @@ namespace ng
 			--firstY;
 
 		if(drawBackground)
-		{
-			foreach(row, firstY, _rows.lower_bound(yMax, &row_y_comp))
+		{			
+			foreach(row, firstY, _rows.lower_bound(yMax, &row_y_comp)) {
 				row->value.draw_background(_theme, *_metrics, context, isFlipped, visibleRect, background, _buffer, row->offset._length, CGPointMake(_margin.left, _margin.top + row->offset._height));
+			}
 		}
-
+		
 		base_colors_t const& baseColors = get_base_colors(_theme->is_dark());
 		if(_draw_wrap_column)
 			render::fill_rect(context, baseColors.margin_indicator, OakRectMake(_margin.left + _metrics->column_width() * effective_wrap_column(), CGRectGetMinY(visibleRect), 1, CGRectGetHeight(visibleRect)));
@@ -837,6 +847,24 @@ namespace ng
 			{
 				render::fill_rect(context, baseColors.indent_guides, OakRectMake(x, CGRectGetMinY(visibleRect), 1, CGRectGetHeight(visibleRect)));
 				x = _margin.left + _metrics->column_width() * i;
+			}
+		}
+		
+		std::vector<int> highlightedLines;		
+		for(auto const& range : selection)
+		{
+			for(auto const& rect : rects_for_ranges(range, kRectsIncludeCarets))
+			{
+				int yIdx = (int)rect.origin.y;
+		      if (std::find(highlightedLines.begin(), highlightedLines.end(), yIdx) == highlightedLines.end()) {
+					highlightedLines.push_back(yIdx);
+					
+					CGRect lineRect = full_width(rect);
+					CGColorRef lineColor = _theme->styles_for_scope(_buffer.scope(range.min().index).right).selection();
+					lineColor = CGColorCreateCopyWithAlpha(lineColor, 0.25 * CGColorGetAlpha(lineColor));
+					render::fill_rect(context, lineColor, lineRect);
+					CFRelease(lineColor);
+				}
 			}
 		}
 
