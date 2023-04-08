@@ -6,7 +6,7 @@
 #include <text/utf8.h>
 #include <oak/oak.h>
 
-static size_t const kParserMaxLineSize = 4096;
+static size_t const kParserMaxLineSize = 4096 * 128;
 
 namespace
 {
