@@ -10,7 +10,7 @@
 
 @interface SPMObserver : NSObject
 {
-	// id _spmObserver;
+	id _spmObserver;
 }
 @end
 
@@ -19,29 +19,25 @@
 {
 	if(self = [super init])
 	{
-		NSURL* repositoryURL = [NSURL fileURLWithPath:url.path isDirectory:YES];
-		if([url.query hasSuffix:@"source"]) {
-			//_spmObserver = [SCMManager.sharedInstance addObserverToRepositoryAtURL:repositoryURL usingBlock:^(SCMRepository* repository){
-			//	handler([SCMStatusObserver unstagedURLsInRepository:repository]);
-			//}];
-			handler(@[]);
-		} else if([url.query hasSuffix:@"tests"]) {
-			//_scmObserver = [SCMManager.sharedInstance addObserverToRepositoryAtURL:repositoryURL usingBlock:^(SCMRepository* repository){
-			//	handler([SCMStatusObserver untrackedURLsInRepository:repository]);
-			//}];
-			handler(@[]);
-		} else {
-			handler(@[
-				[NSURL URLWithString:[NSString stringWithFormat:@"spm://%@/?show=source", [url.path stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLPathAllowedCharacterSet]]],
-				[NSURL URLWithString:[NSString stringWithFormat:@"spm://%@/?show=tests", [url.path stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLPathAllowedCharacterSet]]],
-			]);
+		NSLog(@"initWithURL: %@", url);
+		NSURL* fileURL = [NSURL fileURLWithPath:url.path isDirectory:YES];
+		
+		// file path...
+		NSMutableArray * fileUrls = [NSMutableArray array];
+		
+		for(NSURL* otherURL in [NSFileManager.defaultManager contentsOfDirectoryAtURL:fileURL includingPropertiesForKeys:nil options:0 error:nil]) {
+			[fileUrls addObject: otherURL];
 		}
+		handler(fileUrls);
+		
 	}
 	return self;
 }
 
 @end
 
+
+/*
 // ===================
 // = SPM Data Source =
 // ===================
@@ -96,3 +92,5 @@
 	return [NSURL fileURLWithPath:self.URL.path];
 }
 @end
+
+*/

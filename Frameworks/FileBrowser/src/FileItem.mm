@@ -41,6 +41,12 @@ static NSMutableDictionary* SchemeToClass;
 	if(self = [super init])
 	{
 		self.URL = url;
+		
+		for(NSURL* otherURL in [NSFileManager.defaultManager contentsOfDirectoryAtURL:url includingPropertiesForKeys:nil options:0 error:nil]) {
+			if ([otherURL.lastPathComponent isEqualToString: @"Package.swift"]) {
+				_special = @"spm";
+			}
+		}
 
 		[self updateFileProperties];
 	}

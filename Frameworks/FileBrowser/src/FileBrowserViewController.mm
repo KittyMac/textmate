@@ -353,24 +353,6 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 	}
 }
 
-- (void)goToSwiftPackageManager:(id)sender {
-	NSURL* url = self.URL;
-	if([url.scheme isEqualToString:@"file"])
-	{
-		// look in the directory for Package.swift file
-		BOOL hasPackageSwift = false;
-		for(NSURL* otherURL in [NSFileManager.defaultManager contentsOfDirectoryAtURL:url includingPropertiesForKeys:nil options:0 error:nil])
-		{
-			NSString* otherBase = otherURL.lastPathComponent;
-			if ([otherBase isEqualToString: @"Package.swift"]) {
-				[self goToURL:[NSURL URLWithString:[NSString stringWithFormat:@"spm://%@", [url.path stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLPathAllowedCharacterSet]]]];
-				return;
-			}
-		}
-	}
-	NSBeep();
-}
-
 - (void)goToParentFolder:(id)sender
 {
 	if(NSURL* url = self.fileItem.parentURL)
@@ -1691,37 +1673,32 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 	_fileItem = item;
 
 	NSURL* url = _fileItem.URL;
-	if(url.isFileURL)
+	if(url.isFileURL && _fileItem.special == nil)
 	{
 		self.fileReference = [TMFileReference fileReferenceWithURL:url];
 	}
 	else
 	{
 		NSImage* image;
-		if([url.scheme isEqualToString:@"spm"])
-		{
-			if([url.query hasSuffix:@"source"]) {
+		if ([_fileItem.special isEqualToString:@"spm"]) {
+			image = [NSImage imageNamed:@"SPMPackage" inSameBundleAsClass:NSClassFromString(@"OakFileBrowser")];
+		} else {
+			if([url.scheme isEqualToString:@"scm"])
+			{
+				if([url.query hasSuffix:@"unstaged"] || [url.query hasSuffix:@"untracked"])
+						image = [NSWorkspace.sharedWorkspace iconForFileType:NSFileTypeForHFSTypeCode((OSType)kGenericFolderIcon)];
+				else	image = [NSImage imageNamed:@"SCMTemplate" inSameBundleAsClass:NSClassFromString(@"OakFileBrowser")];
+			}
+			else if([url.scheme isEqualToString:@"computer"])
+			{
+				image = [NSImage imageNamed:NSImageNameComputer];
+			}
+			else
+			{
 				image = [NSWorkspace.sharedWorkspace iconForFileType:NSFileTypeForHFSTypeCode((OSType)kGenericFolderIcon)];
-			} else if([url.query hasSuffix:@"source"]) {
-				image = [NSWorkspace.sharedWorkspace iconForFileType:NSFileTypeForHFSTypeCode((OSType)kGenericFolderIcon)];
-			} else {
-				image = [NSImage imageNamed:@"SPMPackage" inSameBundleAsClass:NSClassFromString(@"OakFileBrowser")];
 			}
 		}
-		else if([url.scheme isEqualToString:@"scm"])
-		{
-			if([url.query hasSuffix:@"unstaged"] || [url.query hasSuffix:@"untracked"])
-					image = [NSWorkspace.sharedWorkspace iconForFileType:NSFileTypeForHFSTypeCode((OSType)kGenericFolderIcon)];
-			else	image = [NSImage imageNamed:@"SCMTemplate" inSameBundleAsClass:NSClassFromString(@"OakFileBrowser")];
-		}
-		else if([url.scheme isEqualToString:@"computer"])
-		{
-			image = [NSImage imageNamed:NSImageNameComputer];
-		}
-		else
-		{
-			image = [NSWorkspace.sharedWorkspace iconForFileType:NSFileTypeForHFSTypeCode((OSType)kGenericFolderIcon)];
-		}
+		
 
 		image = [image copy];
 		image.size = NSMakeSize(16, 16);

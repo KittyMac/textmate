@@ -1884,7 +1884,6 @@ static NSArray* const kObservedKeyPaths = @[ @"arrayController.arrangedObjects.p
 - (IBAction)goToDesktop:(id)sender          { self.fileBrowserVisible = YES; [self.fileBrowser goToDesktop:sender];          }
 - (IBAction)goToFavorites:(id)sender        { self.fileBrowserVisible = YES; [self.fileBrowser goToFavorites:sender];        }
 - (IBAction)goToSCMDataSource:(id)sender    { self.fileBrowserVisible = YES; [self.fileBrowser goToSCMDataSource:sender];    }
-- (IBAction)goToSwiftPackageManager:(id)sender    { self.fileBrowserVisible = YES; [self.fileBrowser goToSwiftPackageManager:sender];    }
 - (IBAction)orderFrontGoToFolder:(id)sender { self.fileBrowserVisible = YES; [self.fileBrowser orderFrontGoToFolder:sender]; }
 
 // ===============

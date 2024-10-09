@@ -17,6 +17,8 @@ extern NSURL* const kURLLocationFavorites;
 @property (nonatomic) NSString* disambiguationSuffix;
 @property (nonatomic) NSString* toolTip;
 
+@property (nonatomic) NSString* special;
+
 @property (nonatomic, readonly) BOOL canRename;
 @property (nonatomic, readonly, getter = isApplication) BOOL application;
 
