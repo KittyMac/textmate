@@ -1698,7 +1698,17 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 	else
 	{
 		NSImage* image;
-		if([url.scheme isEqualToString:@"scm"])
+		if([url.scheme isEqualToString:@"spm"])
+		{
+			if([url.query hasSuffix:@"source"]) {
+				image = [NSWorkspace.sharedWorkspace iconForFileType:NSFileTypeForHFSTypeCode((OSType)kGenericFolderIcon)];
+			} else if([url.query hasSuffix:@"source"]) {
+				image = [NSWorkspace.sharedWorkspace iconForFileType:NSFileTypeForHFSTypeCode((OSType)kGenericFolderIcon)];
+			} else {
+				image = [NSImage imageNamed:@"SPMPackage" inSameBundleAsClass:NSClassFromString(@"OakFileBrowser")];
+			}
+		}
+		else if([url.scheme isEqualToString:@"scm"])
 		{
 			if([url.query hasSuffix:@"unstaged"] || [url.query hasSuffix:@"untracked"])
 					image = [NSWorkspace.sharedWorkspace iconForFileType:NSFileTypeForHFSTypeCode((OSType)kGenericFolderIcon)];
