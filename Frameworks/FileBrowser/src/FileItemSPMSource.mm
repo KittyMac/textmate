@@ -28,6 +28,7 @@
 		for(NSURL* otherURL in [NSFileManager.defaultManager contentsOfDirectoryAtURL:fileURL includingPropertiesForKeys:nil options:0 error:nil]) {
 			[fileUrls addObject: otherURL];
 		}
+		[fileUrls addObject: [NSURL URLWithString: @"special://separator"]];
 		handler(fileUrls);
 		
 	}

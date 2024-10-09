@@ -1,3 +1,4 @@
+#import "SeparatorTableCellView.h"
 #import "FileBrowserViewController.h"
 #import "FileBrowserView.h"
 #import "FileBrowserOutlineView.h"
@@ -1437,6 +1438,17 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 	];
 
 	return ^NSComparisonResult(FileItem* lhs, FileItem* rhs){
+		// special items maintain their original ordering and always come last(?)
+		if (lhs.special != nil && rhs.special == nil) {
+			return NSOrderedDescending;
+		}
+		if (lhs.special == nil && rhs.special != nil) {
+			return NSOrderedAscending;
+		}
+		if (lhs.special != nil && rhs.special != nil) {
+			return NSOrderedSame;
+		}
+		
 		if(_sortDirectoriesBeforeFiles)
 		{
 			if((lhs.isDirectory || lhs.isLinkToDirectory) && !(rhs.isDirectory || rhs.isLinkToDirectory))
@@ -1680,7 +1692,7 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 	else
 	{
 		NSImage* image;
-		if ([_fileItem.special isEqualToString:@"spm"]) {
+		if ([_fileItem.special isEqualToString:@"special://spm.root"]) {
 			image = [NSImage imageNamed:@"SPMPackage" inSameBundleAsClass:NSClassFromString(@"OakFileBrowser")];
 		} else {
 			if([url.scheme isEqualToString:@"scm"])
@@ -2088,6 +2100,11 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 - (NSView*)outlineView:(NSOutlineView*)outlineView viewForTableColumn:(NSTableColumn*)tableColumn item:(FileItem*)item
 {
 	FileItemTableCellView* res = [outlineView makeViewWithIdentifier:tableColumn.identifier owner:self];
+	
+	if ([item.special isEqualToString: @"special://separator"]) {
+		return [[SeparatorTableCellView alloc] init];
+	}
+	
 	if(!res)
 	{
 		res = [[FileItemTableCellView alloc] init];

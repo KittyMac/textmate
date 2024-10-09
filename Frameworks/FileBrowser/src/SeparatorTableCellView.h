@@ -1,0 +1,2 @@
+@interface SeparatorTableCellView : NSTableCellView
+@end

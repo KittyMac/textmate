@@ -33,6 +33,9 @@ static NSMutableDictionary* SchemeToClass;
 
 + (instancetype)fileItemWithURL:(NSURL*)url
 {
+	if ([[url scheme] isEqualToString: @"special"]) {
+		return [[FileItem alloc] initWithURL:url];
+	}
 	return [[[self classForURL:url] alloc] initWithURL:url];
 }
 
@@ -42,9 +45,13 @@ static NSMutableDictionary* SchemeToClass;
 	{
 		self.URL = url;
 		
+		if ([[url scheme] isEqualToString: @"special"]) {
+			_special = [url description];
+		}
+		
 		for(NSURL* otherURL in [NSFileManager.defaultManager contentsOfDirectoryAtURL:url includingPropertiesForKeys:nil options:0 error:nil]) {
 			if ([otherURL.lastPathComponent isEqualToString: @"Package.swift"]) {
-				_special = @"spm";
+				_special = @"special://spm.root";
 			}
 		}
 
