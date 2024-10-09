@@ -370,6 +370,7 @@ BOOL HasDocumentWindow (NSArray* windows)
 				{ @"Select None",      @selector(deselectAll:),            @"A"   },
 				{ /* -------- */ },
 				{ @"Project Folder",   @selector(goToProjectFolder:),      @"P"   },
+				{ @"Swift Package Manager",   @selector(goToSwiftPackageManager:),      @"M"   },
 				{ @"SCM Status",       @selector(goToSCMDataSource:),      @"Y"   },
 				{ @"Computer",         @selector(goToComputer:),           @"C"   },
 				{ @"Home",             @selector(goToHome:),               @"H"   },

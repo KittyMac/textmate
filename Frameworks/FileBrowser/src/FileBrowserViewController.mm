@@ -353,6 +353,24 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 	}
 }
 
+- (void)goToSwiftPackageManager:(id)sender {
+	NSURL* url = self.URL;
+	if([url.scheme isEqualToString:@"file"])
+	{
+		// look in the directory for Package.swift file
+		BOOL hasPackageSwift = false;
+		for(NSURL* otherURL in [NSFileManager.defaultManager contentsOfDirectoryAtURL:url includingPropertiesForKeys:nil options:0 error:nil])
+		{
+			NSString* otherBase = otherURL.lastPathComponent;
+			if ([otherBase isEqualToString: @"Package.swift"]) {
+				[self goToURL:[NSURL URLWithString:[NSString stringWithFormat:@"spm://%@", [url.path stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLPathAllowedCharacterSet]]]];
+				return;
+			}
+		}
+	}
+	NSBeep();
+}
+
 - (void)goToParentFolder:(id)sender
 {
 	if(NSURL* url = self.fileItem.parentURL)

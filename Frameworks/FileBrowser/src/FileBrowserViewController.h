@@ -44,6 +44,7 @@
 - (void)goToDesktop:(id)sender;
 - (void)goToFavorites:(id)sender;
 - (void)goToSCMDataSource:(id)sender;
+- (void)goToSwiftPackageManager:(id)sender;
 - (void)orderFrontGoToFolder:(id)sender;
 
 // ======================================================
