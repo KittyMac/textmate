@@ -5,6 +5,11 @@
 
 typedef void(^HandlerBlock)(NSArray<NSURL*>*); 
 
+@interface SPMHandler : NSObject
+@property (nonatomic) NSURL* url;
+@property (nonatomic) HandlerBlock handler;
+@end
+
 @interface SPMObserver : NSObject
 @property (nonatomic) NSString* projectPath;
 @property (nonatomic) NSArray* tests;
@@ -17,9 +22,8 @@ typedef void(^HandlerBlock)(NSArray<NSURL*>*);
 // 
 // - (SCMRepository*)repositoryAtURL:(NSURL*)url;
 
-- (instancetype) initWithURL:(NSURL*)url
-                  usingBlock:(HandlerBlock) handler;
-- (void) addHandler:(HandlerBlock) handler;
+- (instancetype) initWithURL:(NSURL*)url;
+- (void) addHandler:(HandlerBlock) handler forURL:(NSURL *) url;
 - (void) removeHandler:(HandlerBlock) handler;
 
 - (void) refreshTests;

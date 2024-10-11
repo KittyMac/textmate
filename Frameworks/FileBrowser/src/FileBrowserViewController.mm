@@ -2108,6 +2108,9 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 	if ([item.special hasPrefix: @"special://testClass"]) {
 		return [[TestClassTableCellView alloc] init];
 	}
+	if ([item.special hasPrefix: @"special://testFunction"]) {
+		return [[TestClassTableCellView alloc] init];
+	}
 	
 	if(!res)
 	{

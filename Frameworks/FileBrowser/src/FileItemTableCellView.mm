@@ -1,5 +1,6 @@
 #import "FileItemTableCellView.h"
 #import "FileItem.h"
+#import "SPM/SPMManager.h"
 #import <OakAppKit/OakUIConstructionFunctions.h>
 #import <OakAppKit/OakFinderTag.h>
 #import <TMFileReference/TMFileReference.h>
@@ -26,11 +27,9 @@
 
 - (id)valueForKey:(id)aKey {
 	if ([self respondsToSelector:@selector(URL)]) {
-		NSURLComponents *components = [NSURLComponents componentsWithURL:self.URL resolvingAgainstBaseURL:NO];
-		for (NSURLQueryItem *item in components.queryItems) {
-		    if ([item.name isEqualToString:aKey]) {
-		        return item.value;
-		    }
+		id value = [self.URL queryForKey:aKey];
+		if (value != NULL) {
+			return value;
 		}
 	}
 	return [super valueForKey:aKey];

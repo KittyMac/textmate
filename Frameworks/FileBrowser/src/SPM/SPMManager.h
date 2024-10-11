@@ -1,6 +1,10 @@
 #import "SPMObserver.h"
 #import <scm/status.h>
 
+@interface NSURL (QueryLookup)
+- (id)queryForKey:(id)aKey;
+@end
+
 @interface SPMManager : NSObject
 @property (class, readonly) SPMManager* sharedInstance;
 

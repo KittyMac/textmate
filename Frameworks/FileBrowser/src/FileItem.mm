@@ -28,6 +28,9 @@ static NSMutableDictionary* SchemeToClass;
 
 + (Class)classForURL:(NSURL*)url
 {
+	if (SchemeToClass[url.scheme] == NULL) {
+		return [FileItem class];
+	}
 	return SchemeToClass[url.scheme];
 }
 
@@ -49,6 +52,7 @@ static NSMutableDictionary* SchemeToClass;
 			_special = [url description];
 		}
 		
+		// This is just so we can get a custom icon; we should find a better way to do that
 		for(NSURL* otherURL in [NSFileManager.defaultManager contentsOfDirectoryAtURL:url includingPropertiesForKeys:nil options:0 error:nil]) {
 			if ([otherURL.lastPathComponent isEqualToString: @"Package.swift"]) {
 				_special = @"special://spm.root";
