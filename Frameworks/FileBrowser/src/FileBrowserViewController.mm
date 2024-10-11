@@ -1,4 +1,5 @@
-#import "SeparatorTableCellView.h"
+#import "SPM/SeparatorTableCellView.h"
+#import "SPM/TestClassTableCellView.h"
 #import "FileBrowserViewController.h"
 #import "FileBrowserView.h"
 #import "FileBrowserOutlineView.h"
@@ -2101,8 +2102,11 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 {
 	FileItemTableCellView* res = [outlineView makeViewWithIdentifier:tableColumn.identifier owner:self];
 	
-	if ([item.special isEqualToString: @"special://separator"]) {
+	if ([item.special hasPrefix: @"special://separator"]) {
 		return [[SeparatorTableCellView alloc] init];
+	}
+	if ([item.special hasPrefix: @"special://testClass"]) {
+		return [[TestClassTableCellView alloc] init];
 	}
 	
 	if(!res)

@@ -24,6 +24,18 @@
 	return [NSSet setWithObjects:@"URL", @"displayName", nil];
 }
 
+- (id)valueForKey:(id)aKey {
+	if ([self respondsToSelector:@selector(URL)]) {
+		NSURLComponents *components = [NSURLComponents componentsWithURL:self.URL resolvingAgainstBaseURL:NO];
+		for (NSURLQueryItem *item in components.queryItems) {
+		    if ([item.name isEqualToString:aKey]) {
+		        return item.value;
+		    }
+		}
+	}
+	return [super valueForKey:aKey];
+}
+
 - (NSArray*)editingAndDisplayName
 {
 	return @[ self.URL.lastPathComponent ?: @"", self.displayName ];

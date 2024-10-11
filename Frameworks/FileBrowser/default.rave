@@ -4,6 +4,6 @@ target "${dirname}" {
 
 	files resources/* "Resources"
 
-	sources src/*.mm src/OFB/*.mm
+	sources src/*.mm src/OFB/*.mm src/SPM/*.mm
 	frameworks Cocoa
 }
