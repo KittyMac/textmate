@@ -1,12 +1,9 @@
 #import "FileItem.h"
 #import "FSEventsManager.h"
 #import "SCMManager.h"
+#import "SPM/SPMManager.h"
 #import <io/path.h>
 #import <ns/ns.h>
-
-@interface SPMObserver : NSObject
-- (instancetype)initWithURL:(NSURL*)url usingBlock:(void(^)(NSArray<NSURL*>*))handler;
-@end
 
 // =======================================
 // = File system and SCM status observer =
@@ -198,10 +195,9 @@
 + (id)makeObserverForURL:(NSURL*)url usingBlock:(void(^)(NSArray<NSURL*>*))handler
 {
 	// Auto-detect the type of directory this is and use the correct observer for it
-	for(NSURL* otherURL in [NSFileManager.defaultManager contentsOfDirectoryAtURL:url includingPropertiesForKeys:nil options:0 error:nil]) {
-		if ([otherURL.lastPathComponent isEqualToString: @"Package.swift"]) {
-			return [[SPMObserver alloc] initWithURL:url usingBlock:handler];
-		}
+	SPMObserver * observer = [[SPMManager sharedInstance] observerAtURL: url usingBlock: handler];
+	if (observer != NULL) {
+		return observer;
 	}
 	
 	return url.isFileURL ? [[FileSystemObserver alloc] initWithURL:url usingBlock:handler] : nil;

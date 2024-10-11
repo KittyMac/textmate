@@ -30,7 +30,6 @@
     [fileUrls addObject: [NSURL URLWithString: @"special://separator"]];
     
     // TODO: add tests
-    //[NSURL URLWithString:[NSString stringWithFormat:@"scm://localhost%@/?show=unstaged", [repository.URL.path stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLPathAllowedCharacterSet]]],
     // [{"className":"testTests","tests":[{"fileOffset":104,"filePath":"\/Users\/rjbowli\/Development\/textmate\/test\/Tests\/testTests\/testTests.swift","functionName":"testExample()"}]}]
     if (_tests != NULL) {
         for (NSDictionary * testClass in _tests) {

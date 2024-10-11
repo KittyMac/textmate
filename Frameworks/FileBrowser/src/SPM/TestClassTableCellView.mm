@@ -44,32 +44,6 @@
 		
 		//[_openButton bind:NSImageBinding      toObject:self withKeyPath:@"fileReference.icon"                options:nil];
 		[textField bind:NSValueBinding        toObject:self withKeyPath:@"objectValue.displayName" options:nil];
-		
-		/*
-		[_openButton bind:NSImageBinding      toObject:self withKeyPath:@"fileReference.icon"                options:nil];
-		[textField bind:NSValueBinding        toObject:self withKeyPath:@"objectValue.editingAndDisplayName" options:nil];
-		[textField bind:NSEditableBinding     toObject:self withKeyPath:@"objectValue.canRename"             options:nil];
-		[textField bind:NSToolTipBinding      toObject:self withKeyPath:@"objectValue.toolTip"               options:nil];
-		[_closeButton bind:NSHiddenBinding    toObject:self withKeyPath:@"fileReference.closable"            options:@{ NSValueTransformerNameBindingOption: NSNegateBooleanTransformerName }];
-*/
-		//self.textField = textField;
-
-		/*
-		NSView * separatorLine = [[NSView alloc] init];
-		
-		separatorLine.wantsLayer = true;
-		separatorLine.layer.backgroundColor = CGColorCreateGenericGray(0.50, 0.50);
-		
-		[self addSubview: separatorLine];
-
-		// Setup constraints for separatorLine
-		separatorLine.translatesAutoresizingMaskIntoConstraints = NO;
-		[NSLayoutConstraint activateConstraints:@[
-		   [separatorLine.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
-		   [separatorLine.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
-		   [separatorLine.centerYAnchor constraintEqualToAnchor:self.centerYAnchor],
-		   [separatorLine.heightAnchor constraintEqualToConstant:1]
-		]];*/
 	}
 	return self;
 }

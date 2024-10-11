@@ -1,3 +1,6 @@
+#ifndef __SPM_OBSERVER__
+#define __SPM_OBSERVER__
+
 #import <scm/status.h>
 
 typedef void(^HandlerBlock)(NSArray<NSURL*>*); 
@@ -18,3 +21,5 @@ typedef void(^HandlerBlock)(NSArray<NSURL*>*);
 - (void) refreshTests;
 
 @end
+
+#endif
