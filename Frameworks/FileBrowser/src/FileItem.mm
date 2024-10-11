@@ -1,4 +1,5 @@
 #import "FileItem.h"
+#import "SPM/SPMManager.h"
 #import <OakAppKit/OakFinderTag.h>
 #import <OakFoundation/OakFoundation.h>
 #import <Preferences/Keys.h>
@@ -113,6 +114,10 @@ static NSMutableDictionary* SchemeToClass;
 
 - (BOOL)isDirectory
 {
+	id hasChildren = [_URL queryForKey:@"hasChildren"];
+	if (hasChildren != NULL) {
+		return [hasChildren boolValue];
+	}
 	return _URL.hasDirectoryPath;
 }
 

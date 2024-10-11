@@ -84,6 +84,7 @@
            components.path = @"/";
            components.queryItems = @[
                [NSURLQueryItem queryItemWithName:@"spmPath" value:_projectPath],
+               [NSURLQueryItem queryItemWithName:@"hasChildren" value:@"true"],
                [NSURLQueryItem queryItemWithName:@"displayName" value:className],
                [NSURLQueryItem queryItemWithName:@"className" value:className]
            ];
@@ -109,7 +110,7 @@
                 for (NSDictionary * test in testClass[@"tests"]) {
                     NSString * functionName = test[@"functionName"];
                     NSString * filePath = test[@"filePath"];
-                    //NSString * fileOffset = test[@"fileOffset"];
+                    NSNumber * fileOffset = test[@"fileOffset"];
                     
                     NSURLComponents *components = [[NSURLComponents alloc] init];
                     components.scheme = @"special";
@@ -117,10 +118,11 @@
                     components.path = @"/";
                     components.queryItems = @[
                         [NSURLQueryItem queryItemWithName:@"spmPath" value:_projectPath],
+                        [NSURLQueryItem queryItemWithName:@"hasChildren" value:@"false"],
                         [NSURLQueryItem queryItemWithName:@"displayName" value:functionName],
                         [NSURLQueryItem queryItemWithName:@"functionName" value:functionName],
                         [NSURLQueryItem queryItemWithName:@"filePath" value:filePath],
-                        //[NSURLQueryItem queryItemWithName:@"fileOffset" value:fileOffset]
+                        [NSURLQueryItem queryItemWithName:@"fileOffset" value:[fileOffset description]]
                     ];
                     NSURL * itemURL = components.URL;
                     if (itemURL != NULL) {
