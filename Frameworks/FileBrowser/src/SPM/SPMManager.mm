@@ -30,6 +30,7 @@
 {
 	while(url) {
 		if(SPMObserver* observer = [_observers objectForKey:url]) {
+			[observer addHandler: handler];
 			return observer;
 		}
 		

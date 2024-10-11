@@ -8,7 +8,8 @@ typedef void(^HandlerBlock)(NSArray<NSURL*>*);
 @interface SPMObserver : NSObject
 @property (nonatomic) NSString* projectPath;
 @property (nonatomic) NSArray* tests;
-@property (nonatomic) HandlerBlock handler;
+
+@property (nonatomic) NSMutableArray* handlers;
 // 
 // - (id)addObserverToFileAtURL:(NSURL*)url usingBlock:(void(^)(scm::status::type))handler;
 // - (id)addObserverToRepositoryAtURL:(NSURL*)url usingBlock:(void(^)(SCMRepository*))handler;
@@ -18,6 +19,9 @@ typedef void(^HandlerBlock)(NSArray<NSURL*>*);
 
 - (instancetype) initWithURL:(NSURL*)url
                   usingBlock:(HandlerBlock) handler;
+- (void) addHandler:(HandlerBlock) handler;
+- (void) removeHandler:(HandlerBlock) handler;
+
 - (void) refreshTests;
 
 @end

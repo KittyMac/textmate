@@ -11,10 +11,19 @@
 {
     if(self = [super init]) {
         _projectPath = url.path;
-        _handler = handler;
+		  _handlers = [[NSMutableArray alloc] init];
+		  [_handlers addObject: handler];
         [self refreshAll];
     }
     return self;
+}
+
+- (void) addHandler:(HandlerBlock) handler {
+  [_handlers addObject: handler];
+}
+
+- (void) removeHandler:(HandlerBlock) handler {
+  [_handlers removeObject: handler];
 }
 
 - (void) updateHandler {
@@ -48,7 +57,9 @@
         }
      }
     
-    _handler(fileUrls);
+	  for (HandlerBlock handler in _handlers) {
+	  		handler(fileUrls);
+	  }
 }
 
 - (void) refreshAll {
