@@ -112,6 +112,36 @@ OakRolloverButton* OakCreateCloseButton (NSString* accessibilityLabel)
 	return closeButton;
 }
 
+OakRolloverButton* OakCreateTestPassButton (NSString* accessibilityLabel)
+{
+	OakRolloverButton* closeButton = [[OakRolloverButton alloc] initWithFrame:NSZeroRect];
+	closeButton.regularImage  = [NSImage imageNamed:@"TestsPassTemplate"         inSameBundleAsClass:[OakRolloverButton class]];
+	[closeButton.regularImage setTemplate: NO];
+	
+	closeButton.accessibilityLabel = accessibilityLabel;
+	return closeButton;
+}
+
+OakRolloverButton* OakCreateTestFailButton (NSString* accessibilityLabel)
+{
+	OakRolloverButton* closeButton = [[OakRolloverButton alloc] initWithFrame:NSZeroRect];
+	closeButton.regularImage  = [NSImage imageNamed:@"TestsFailTemplate"         inSameBundleAsClass:[OakRolloverButton class]];
+	[closeButton.regularImage setTemplate: NO];
+
+	closeButton.accessibilityLabel = accessibilityLabel;
+	return closeButton;
+}
+
+OakRolloverButton* OakCreateTestUnknownButton (NSString* accessibilityLabel)
+{
+	OakRolloverButton* closeButton = [[OakRolloverButton alloc] initWithFrame:NSZeroRect];
+	closeButton.regularImage  = [NSImage imageNamed:@"TestsUnknownTemplate"         inSameBundleAsClass:[OakRolloverButton class]];
+	[closeButton.regularImage setTemplate: NO];
+
+	closeButton.accessibilityLabel = accessibilityLabel;
+	return closeButton;
+}
+
 // =========================
 // = OakBackgroundFillView =
 // =========================

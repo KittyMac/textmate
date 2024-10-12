@@ -1,4 +1,5 @@
 #import "TestFunctionTableCellView.h"
+#import <OakAppKit/NSImage Additions.h>
 #import <OakAppKit/OakUIConstructionFunctions.h>
 #import <OakAppKit/OakFinderTag.h>
 #import <TMFileReference/TMFileReference.h>
@@ -26,10 +27,14 @@
 		[textField.cell setWraps:NO];
 		[textField.cell setLineBreakMode:NSLineBreakByTruncatingMiddle];
 		//textField.formatter = [[FileItemFormatter alloc] initWithTableCellView:self];
-
+		
+		_runButton = OakCreateTestUnknownButton();
+		_runButton.refusesFirstResponder = YES;
+		
 		NSStackView* stackView = [NSStackView stackViewWithViews:@[
 			// _openButton, textField
-			textField
+			textField,
+			_runButton
 		]];
 		stackView.spacing = 4;
 
@@ -42,15 +47,22 @@
 		[stackView.topAnchor      constraintEqualToAnchor:self.topAnchor      constant: 0].active = YES;
 		[stackView.bottomAnchor   constraintEqualToAnchor:self.bottomAnchor   constant: 0].active = YES;
 		
-		//[_openButton bind:NSImageBinding      toObject:self withKeyPath:@"fileReference.icon"                options:nil];
-		[textField bind:NSValueBinding        toObject:self withKeyPath:@"objectValue.displayName" options:nil];
+		[_runButton bind:NSImageBinding toObject:self withKeyPath:@"objectValue.runIcon" options:nil];
+		[textField bind:NSValueBinding toObject:self withKeyPath:@"objectValue.displayName" options:nil];
 	}
 	return self;
 }
 
+- (void)runTest:(id)sender
+{
+	NSLog(@"runTest");
+}
+
 - (void)dealloc
 {
-
+	[_runButton unbind:NSImageBinding];
+	[self.textField unbind:NSValueBinding];
 }
+
 
 @end

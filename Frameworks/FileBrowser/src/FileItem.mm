@@ -65,6 +65,11 @@ static NSMutableDictionary* SchemeToClass;
 	return self;
 }
 
+- (void) runTest:(id)sender
+{
+	NSLog(@"runTest 2");
+}
+
 - (BOOL)canRename
 {
 	NSNumber* flag;

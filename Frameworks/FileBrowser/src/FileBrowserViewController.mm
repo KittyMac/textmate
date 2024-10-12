@@ -1,5 +1,7 @@
 #import "SPM/SeparatorTableCellView.h"
 #import "SPM/TestClassTableCellView.h"
+#import "SPM/TestFunctionTableCellView.h"
+
 #import "FileBrowserViewController.h"
 #import "FileBrowserView.h"
 #import "FileBrowserOutlineView.h"
@@ -2100,8 +2102,6 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 
 - (NSView*)outlineView:(NSOutlineView*)outlineView viewForTableColumn:(NSTableColumn*)tableColumn item:(FileItem*)item
 {
-	FileItemTableCellView* res = [outlineView makeViewWithIdentifier:tableColumn.identifier owner:self];
-	
 	if ([item.special hasPrefix: @"special://separator"]) {
 		return [[SeparatorTableCellView alloc] init];
 	}
@@ -2109,9 +2109,13 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 		return [[TestClassTableCellView alloc] init];
 	}
 	if ([item.special hasPrefix: @"special://testFunction"]) {
-		return [[TestClassTableCellView alloc] init];
+		TestFunctionTableCellView * view = [[TestFunctionTableCellView alloc] init];
+		view.runButton.action = @selector(runTest:);
+		view.runButton.target = item;
+		return view;
 	}
 	
+	FileItemTableCellView* res = [outlineView makeViewWithIdentifier:tableColumn.identifier owner:self];
 	if(!res)
 	{
 		res = [[FileItemTableCellView alloc] init];
