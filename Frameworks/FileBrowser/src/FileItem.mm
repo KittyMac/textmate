@@ -27,6 +27,7 @@ static NSMutableDictionary* SchemeToClass;
 	SchemeToClass[urlScheme] = klass;
 }
 
+
 + (Class)classForURL:(NSURL*)url
 {
 	if (SchemeToClass[url.scheme] == NULL) {
@@ -37,9 +38,6 @@ static NSMutableDictionary* SchemeToClass;
 
 + (instancetype)fileItemWithURL:(NSURL*)url
 {
-	if ([[url scheme] isEqualToString: @"special"]) {
-		return [[FileItem alloc] initWithURL:url];
-	}
 	return [[[self classForURL:url] alloc] initWithURL:url];
 }
 
@@ -48,26 +46,18 @@ static NSMutableDictionary* SchemeToClass;
 	if(self = [super init])
 	{
 		self.URL = url;
-		
-		if ([[url scheme] isEqualToString: @"special"]) {
-			_special = [url description];
-		}
+		self.sortingGroup = 0;
 		
 		// This is just so we can get a custom icon; we should find a better way to do that
 		for(NSURL* otherURL in [NSFileManager.defaultManager contentsOfDirectoryAtURL:url includingPropertiesForKeys:nil options:0 error:nil]) {
 			if ([otherURL.lastPathComponent isEqualToString: @"Package.swift"]) {
-				_special = @"special://spm.root";
+				_overrideFileImage = @"SPMPackage";
 			}
 		}
 
 		[self updateFileProperties];
 	}
 	return self;
-}
-
-- (void) runTest:(id)sender
-{
-	NSLog(@"runTest 2");
 }
 
 - (BOOL)canRename
@@ -119,10 +109,6 @@ static NSMutableDictionary* SchemeToClass;
 
 - (BOOL)isDirectory
 {
-	id hasChildren = [_URL queryForKey:@"hasChildren"];
-	if (hasChildren != NULL) {
-		return [hasChildren boolValue];
-	}
 	return _URL.hasDirectoryPath;
 }
 

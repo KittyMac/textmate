@@ -3,6 +3,9 @@
 #import <OakAppKit/OakFinderTag.h>
 #import <TMFileReference/TMFileReference.h>
 
+#import "SPMManager.h"
+#import "../FileItem.h"
+
 @interface SeparatorTableCellView () <NSTextFieldDelegate>
 @end
 
@@ -35,4 +38,31 @@
 
 }
 
+@end
+
+@interface SeparatorFileItem : FileItem
+{
+	
+}
+@end
+
+@implementation SeparatorFileItem
++ (void)load
+{
+	[self registerClass:self forURLScheme:@"separator"];
+}
+
++ (id)makeObserverForURL:(NSURL*)url usingBlock:(void(^)(NSArray<NSURL*>*))handler
+{
+	return nil;
+}
+
+- (instancetype)initWithURL:(NSURL*)url
+{
+	if(self = [super initWithURL:url])
+	{
+		self.sortingGroup = 1;
+	}
+	return self;
+}
 @end

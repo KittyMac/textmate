@@ -4,6 +4,9 @@
 #import <OakAppKit/OakFinderTag.h>
 #import <TMFileReference/TMFileReference.h>
 
+#import "SPMManager.h"
+#import "../FileItem.h"
+
 @interface TestFunctionTableCellView () <NSTextFieldDelegate>
 @end
 
@@ -65,4 +68,62 @@
 }
 
 
+@end
+
+
+@interface TestFunctionFileItem : FileItem
+{
+	
+}
+@end
+
+@implementation TestFunctionFileItem
++ (void)load
+{
+	[self registerClass:self forURLScheme:@"spmTestFunction"];
+}
+
++ (id)makeObserverForURL:(NSURL*)url usingBlock:(void(^)(NSArray<NSURL*>*))handler
+{
+	// Auto-detect the type of directory this is and use the correct observer for it
+	SPMObserver * observer = [[SPMManager sharedInstance] observerAtURL: url usingBlock: handler];
+	if (observer != NULL) {
+		return observer;
+	}
+	return nil;
+}
+
+- (instancetype)initWithURL:(NSURL*)url
+{
+	if(self = [super initWithURL:url])
+	{
+		self.sortingGroup = 1;
+	}
+	return self;
+}
+
+- (void)dealloc
+{
+	// [SCMManager.sharedInstance removeObserver:_observer];
+}
+
+- (void)runTests:(id)sender
+{
+	NSLog(@"RUN TESTS - TEST FUNCTION");
+}
+
+- (BOOL)isDirectory
+{
+	return false;
+}
+
+- (NSString*)localizedName
+{
+	return super.localizedName;
+}
+
+- (NSURL*)parentURL
+{
+	return [NSURL fileURLWithPath:self.URL.path];
+}
 @end

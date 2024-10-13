@@ -1441,14 +1441,13 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 	];
 
 	return ^NSComparisonResult(FileItem* lhs, FileItem* rhs){
-		// special items maintain their original ordering and always come last(?)
-		if (lhs.special != nil && rhs.special == nil) {
+		if (lhs.sortingGroup > rhs.sortingGroup) {
 			return NSOrderedDescending;
 		}
-		if (lhs.special == nil && rhs.special != nil) {
+		if (lhs.sortingGroup < rhs.sortingGroup) {
 			return NSOrderedAscending;
 		}
-		if (lhs.special != nil && rhs.special != nil) {
+		if (lhs.sortingGroup != 0) {
 			return NSOrderedSame;
 		}
 		
@@ -1688,30 +1687,30 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 	_fileItem = item;
 
 	NSURL* url = _fileItem.URL;
-	if(url.isFileURL && _fileItem.special == nil)
+	if(url.isFileURL && _fileItem.overrideFileImage == NULL)
 	{
+		// TODO: image = [NSImage imageNamed:@"SPMPackage" inSameBundleAsClass:NSClassFromString(@"OakFileBrowser")];
 		self.fileReference = [TMFileReference fileReferenceWithURL:url];
 	}
 	else
 	{
 		NSImage* image;
-		if ([_fileItem.special isEqualToString:@"special://spm.root"]) {
-			image = [NSImage imageNamed:@"SPMPackage" inSameBundleAsClass:NSClassFromString(@"OakFileBrowser")];
-		} else {
-			if([url.scheme isEqualToString:@"scm"])
-			{
-				if([url.query hasSuffix:@"unstaged"] || [url.query hasSuffix:@"untracked"])
-						image = [NSWorkspace.sharedWorkspace iconForFileType:NSFileTypeForHFSTypeCode((OSType)kGenericFolderIcon)];
-				else	image = [NSImage imageNamed:@"SCMTemplate" inSameBundleAsClass:NSClassFromString(@"OakFileBrowser")];
-			}
-			else if([url.scheme isEqualToString:@"computer"])
-			{
-				image = [NSImage imageNamed:NSImageNameComputer];
-			}
-			else
-			{
-				image = [NSWorkspace.sharedWorkspace iconForFileType:NSFileTypeForHFSTypeCode((OSType)kGenericFolderIcon)];
-			}
+		if (_fileItem.overrideFileImage != NULL) {
+			image = [NSImage imageNamed:_fileItem.overrideFileImage inSameBundleAsClass:NSClassFromString(@"OakFileBrowser")];
+		}
+		else if([url.scheme isEqualToString:@"scm"])
+		{
+			if([url.query hasSuffix:@"unstaged"] || [url.query hasSuffix:@"untracked"])
+					image = [NSWorkspace.sharedWorkspace iconForFileType:NSFileTypeForHFSTypeCode((OSType)kGenericFolderIcon)];
+			else	image = [NSImage imageNamed:@"SCMTemplate" inSameBundleAsClass:NSClassFromString(@"OakFileBrowser")];
+		}
+		else if([url.scheme isEqualToString:@"computer"])
+		{
+			image = [NSImage imageNamed:NSImageNameComputer];
+		}
+		else
+		{
+			image = [NSWorkspace.sharedWorkspace iconForFileType:NSFileTypeForHFSTypeCode((OSType)kGenericFolderIcon)];
 		}
 		
 
@@ -2102,15 +2101,18 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 
 - (NSView*)outlineView:(NSOutlineView*)outlineView viewForTableColumn:(NSTableColumn*)tableColumn item:(FileItem*)item
 {
-	if ([item.special hasPrefix: @"special://separator"]) {
+	if ([item.URL.scheme hasPrefix: @"separator"]) {
 		return [[SeparatorTableCellView alloc] init];
 	}
-	if ([item.special hasPrefix: @"special://testClass"]) {
-		return [[TestClassTableCellView alloc] init];
+	if ([item.URL.scheme hasPrefix: @"spmTestClass"]) {
+		TestClassTableCellView * view = [[TestClassTableCellView alloc] init];
+		view.runButton.action = @selector(runTests:);
+		view.runButton.target = item;
+		return view;
 	}
-	if ([item.special hasPrefix: @"special://testFunction"]) {
+	if ([item.URL.scheme hasPrefix: @"spmTestFunction"]) {
 		TestFunctionTableCellView * view = [[TestFunctionTableCellView alloc] init];
-		view.runButton.action = @selector(runTest:);
+		view.runButton.action = @selector(runTests:);
 		view.runButton.target = item;
 		return view;
 	}

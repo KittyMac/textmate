@@ -17,7 +17,8 @@ extern NSURL* const kURLLocationFavorites;
 @property (nonatomic) NSString* disambiguationSuffix;
 @property (nonatomic) NSString* toolTip;
 
-@property (nonatomic) NSString* special;
+@property (nonatomic) NSString* overrideFileImage;
+@property (nonatomic) int sortingGroup;
 
 @property (nonatomic, readonly) BOOL canRename;
 @property (nonatomic, readonly, getter = isApplication) BOOL application;
@@ -42,6 +43,8 @@ extern NSURL* const kURLLocationFavorites;
 
 - (instancetype)initWithURL:(NSURL*)url;
 - (void)updateFileProperties;
+
+- (id) tableCellView;
 @end
 
 @interface FileItem (Observer)

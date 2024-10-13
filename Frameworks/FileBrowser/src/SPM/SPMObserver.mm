@@ -46,19 +46,17 @@
 }
 
 - (void) updateHandlers {
-	 for (SPMHandler * spmHandler in [NSArray arrayWithArray: _handlers]) {
-		  NSURL * url = [spmHandler url];
-		  NSString * scheme = [url scheme];
-		  NSString * host = [url host];
-		  if ([scheme isEqualToString: @"special"]) {
-				if ([host isEqualToString: @"testClass"]) {
-					 [self updateTestClassHandler: spmHandler];
-				} else {
-					NSLog(@"skipping spm handler for %@", url);
-				}
-		  } else {
-				[self updateRootHandler: spmHandler];
-		  }
+	for (SPMHandler * spmHandler in [NSArray arrayWithArray: _handlers]) {
+		NSURL * url = [spmHandler url];
+		NSString * scheme = [url scheme];
+		NSString * host = [url host];
+		if ([scheme isEqualToString: @"spmTestClass"]) {
+			[self updateTestClassHandler: spmHandler];
+		} else if ([scheme isEqualToString: @"file"]) {
+			[self updateRootHandler: spmHandler];
+		} else {
+			NSLog(@"skipping spm handler for %@", url);
+		}
 	}
 }
 
@@ -72,15 +70,14 @@
 	for(NSURL* otherURL in [NSFileManager.defaultManager contentsOfDirectoryAtURL:fileURL includingPropertiesForKeys:nil options:0 error:nil]) {
 		 [fileUrls addObject: otherURL];
 	}
-	[fileUrls addObject: [NSURL URLWithString: @"special://separator"]];
+	[fileUrls addObject: [NSURL URLWithString: @"separator://separator"]];
 	 
 	// [{"className":"testTests","tests":[{"fileOffset":104,"filePath":"\/Users\/rjbowli\/Development\/textmate\/test\/Tests\/testTests\/testTests.swift","functionName":"testExample()"}]}]
 	if (_tests != NULL) {
 		 for (NSDictionary * testClass in _tests) {
 			  NSString * className = testClass[@"className"];
 			  NSURLComponents *components = [[NSURLComponents alloc] init];
-			  components.scheme = @"special";
-			  components.host = @"testClass";
+			  components.scheme = @"spmTestClass";
 			  components.path = @"/";
 			  components.queryItems = @[
 					[NSURLQueryItem queryItemWithName:@"spmPath" value:_projectPath],
@@ -115,8 +112,7 @@
 						  NSString * runIcon = @"TestsUnknownTemplate";
 						  
 						  NSURLComponents *components = [[NSURLComponents alloc] init];
-						  components.scheme = @"special";
-						  components.host = @"testFunction";
+						  components.scheme = @"spmTestFunction";
 						  components.path = @"/";
 						  components.queryItems = @[
 								[NSURLQueryItem queryItemWithName:@"spmPath" value:_projectPath],
