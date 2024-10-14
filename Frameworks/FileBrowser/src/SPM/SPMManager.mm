@@ -78,6 +78,21 @@
 	return [_observers objectForKey:projectURL];
 }
 
+- (SPMTestClass*)existingTestClassAtURL:(NSURL*)url
+{
+	if (SPMObserver * observer = [self existingObserverAtURL: url]) {
+		NSString * targetName = [url queryForKey:@"targetName"];
+		NSString * className = [url queryForKey:@"className"];
+		for (SPMTestClass * testClass in observer.testClasses) {
+			if ([testClass.targetName isEqualToString: targetName] &&
+				[testClass.className isEqualToString: className]) {
+				return testClass;
+			}
+		}
+	}
+	return nil;
+}
+
 - (SPMTest*)existingTestAtURL:(NSURL*)url
 {
 	if (SPMObserver * observer = [self existingObserverAtURL: url]) {
@@ -92,7 +107,6 @@
 			}
 		}
 	}
-
 	return nil;
 }
 
@@ -109,7 +123,6 @@
 			}
 		}
 	}
-
 	return allTests;
 }
 

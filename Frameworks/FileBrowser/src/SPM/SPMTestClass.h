@@ -1,13 +1,10 @@
-#ifndef __SPM_TEST__
-#define __SPM_TEST__
+#ifndef __SPM_TESTCLASS__
+#define __SPM_TESTCLASS__
 
-@interface SPMTest : NSObject
+@interface SPMTestClass : NSObject
 @property (nonatomic) NSString * targetName;
 @property (nonatomic) NSString * className;
-@property (nonatomic) NSString * functionName;
 @property (nonatomic) NSString * result;
-@property (nonatomic) NSString * filePath;
-@property (nonatomic) NSNumber * fileOffset;
 
 - (id) initWithDictionary: (NSDictionary *) info;
 - (void) updateWithDictionary: (NSDictionary *) info;

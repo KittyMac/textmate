@@ -41,8 +41,8 @@
 		[stackView.topAnchor      constraintEqualToAnchor:self.topAnchor      constant: 0].active = YES;
 		[stackView.bottomAnchor   constraintEqualToAnchor:self.bottomAnchor   constant: 0].active = YES;
 		
-		[_runButton bind:NSImageBinding toObject:self withKeyPath:@"objectValue.runIcon" options:nil];
-		[textField bind:NSValueBinding        toObject:self withKeyPath:@"objectValue.displayName" options:nil];
+		[_runButton bind:NSImageBinding toObject:self withKeyPath:@"objectValue.testClass.runIcon" options:nil];
+		[textField bind:NSValueBinding        toObject:self withKeyPath:@"objectValue.testClass.className" options:nil];
 	}
 	return self;
 }
@@ -57,7 +57,7 @@
 
 @interface TestClassFileItem : FileItem
 {
-	
+	SPMTestClass * _testClass;
 }
 @end
 
@@ -82,6 +82,7 @@
 {
 	if(self = [super initWithURL:url])
 	{
+		_testClass = [[SPMManager sharedInstance] existingTestClassAtURL: url];
 		self.sortingGroup = 1;
 	}
 	return self;
@@ -121,12 +122,6 @@
 	NSImage * img = [NSImage imageNamed:imageName inSameBundleAsClass:[OakRolloverButton class]];
 	[img setTemplate: NO];
 	return img;
-}
-
-
-- (NSString*)localizedName
-{
-	return [self.URL queryForKey:@"className"];
 }
 
 - (NSURL*)parentURL

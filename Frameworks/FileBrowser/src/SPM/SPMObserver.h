@@ -2,6 +2,7 @@
 #define __SPM_OBSERVER__
 
 #import "SPMTest.h"
+#import "SPMTestClass.h"
 
 typedef void(^HandlerBlock)(NSArray<NSURL*>*); 
 
@@ -13,6 +14,7 @@ typedef void(^HandlerBlock)(NSArray<NSURL*>*);
 @interface SPMObserver : NSObject
 @property (nonatomic) NSString* projectPath;
 @property (nonatomic) NSMutableArray* tests;
+@property (nonatomic) NSMutableArray* testClasses;
 
 @property (nonatomic) NSMutableArray* handlers;
 // 

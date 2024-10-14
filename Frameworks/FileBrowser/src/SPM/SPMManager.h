@@ -13,6 +13,7 @@
 						 usingBlock:(HandlerBlock) handler;
 
 - (SPMObserver*)existingObserverAtURL:(NSURL*)url;
+- (SPMTestClass*)existingTestClassAtURL:(NSURL*)url;
 - (SPMTest*)existingTestAtURL:(NSURL*)url;
 - (NSArray*)existingTestsAtURL:(NSURL*)url;
 
