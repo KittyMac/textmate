@@ -31,8 +31,12 @@
 		[textField.cell setLineBreakMode:NSLineBreakByTruncatingMiddle];
 		//textField.formatter = [[FileItemFormatter alloc] initWithTableCellView:self];
 		
-		_runButton = OakCreateTestUnknownButton();
+		_runButton = [[NSButton alloc] initWithFrame:NSZeroRect];
 		_runButton.refusesFirstResponder = YES;
+		_runButton.buttonType            = NSButtonTypeMomentaryChange;
+		_runButton.bordered              = NO;
+		_runButton.imagePosition         = NSImageOnly;
+		_runButton.imageScaling          = NSImageScaleProportionallyUpOrDown;
 		
 		NSStackView* stackView = [NSStackView stackViewWithViews:@[
 			// _openButton, textField
@@ -50,8 +54,8 @@
 		[stackView.topAnchor      constraintEqualToAnchor:self.topAnchor      constant: 0].active = YES;
 		[stackView.bottomAnchor   constraintEqualToAnchor:self.bottomAnchor   constant: 0].active = YES;
 		
-		[_runButton bind:NSImageBinding toObject:self withKeyPath:@"objectValue.runIcon" options:nil];
-		[textField bind:NSValueBinding toObject:self withKeyPath:@"objectValue.displayName" options:nil];
+		[_runButton bind:NSImageBinding toObject:self withKeyPath:@"objectValue.test.runIcon" options:nil];
+		[textField bind:NSValueBinding toObject:self withKeyPath:@"objectValue.test.functionName" options:nil];
 	}
 	return self;
 }
@@ -73,7 +77,7 @@
 
 @interface TestFunctionFileItem : FileItem
 {
-	
+	SPMTest * _test;
 }
 @end
 
@@ -97,6 +101,7 @@
 {
 	if(self = [super initWithURL:url])
 	{
+		_test = [[SPMManager sharedInstance] existingTestAtURL: url];
 		self.sortingGroup = 1;
 	}
 	return self;
@@ -119,7 +124,7 @@
 
 - (NSString*)localizedName
 {
-	return super.localizedName;
+	return _test.functionName;
 }
 
 - (NSURL*)parentURL

@@ -26,23 +26,6 @@
 	return [NSSet setWithObjects:@"URL", @"displayName", nil];
 }
 
-- (id)valueForKey:(id)aKey {
-	if ([self respondsToSelector:@selector(URL)]) {
-		id value = [self.URL queryForKey:aKey];
-		if (value != NULL) {
-			
-			if ([aKey isEqualToString:@"runIcon"]) {
-				NSImage * img = [NSImage imageNamed:value inSameBundleAsClass:[OakRolloverButton class]];
-				[img setTemplate: NO];
-				return img;
-			}
-			
-			return value;
-		}
-	}
-	return [super valueForKey:aKey];
-}
-
 - (NSArray*)editingAndDisplayName
 {
 	return @[ self.URL.lastPathComponent ?: @"", self.displayName ];

@@ -3,6 +3,7 @@
 
 @interface NSURL (QueryLookup)
 - (id)queryForKey:(id)aKey;
+- (NSURL *)urlForKey:(id)aKey;
 @end
 
 @interface SPMManager : NSObject
@@ -10,4 +11,9 @@
 
 - (SPMObserver*)observerAtURL:(NSURL*)url
 						 usingBlock:(HandlerBlock) handler;
+
+- (SPMObserver*)existingObserverAtURL:(NSURL*)url;
+- (SPMTest*)existingTestAtURL:(NSURL*)url;
+- (NSArray*)existingTestsAtURL:(NSURL*)url;
+
 @end

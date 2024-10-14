@@ -23,9 +23,6 @@ NSPopUpButton* OakCreatePopUpButton (BOOL pullsDown = NO, NSString* initialItemT
 NSPopUpButton* OakCreateActionPopUpButton (BOOL bordered = NO);
 NSComboBox* OakCreateComboBox (NSView* labelView = nil);
 OakRolloverButton* OakCreateCloseButton (NSString* accessibilityLabel = @"Close document");
-OakRolloverButton* OakCreateTestPassButton (NSString* accessibilityLabel = @"Run test");
-OakRolloverButton* OakCreateTestFailButton (NSString* accessibilityLabel = @"Run test");
-OakRolloverButton* OakCreateTestUnknownButton (NSString* accessibilityLabel = @"Run test");
 NSView* OakCreateNSBoxSeparator ();
 
 OakBackgroundFillView* OakCreateVerticalLine (OakBackgroundFillViewStyle style);

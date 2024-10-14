@@ -49,8 +49,9 @@
 	for (SPMHandler * spmHandler in [NSArray arrayWithArray: _handlers]) {
 		NSURL * url = [spmHandler url];
 		NSString * scheme = [url scheme];
-		NSString * host = [url host];
-		if ([scheme isEqualToString: @"spmTestClass"]) {
+		if ([scheme isEqualToString: @"spmTestFunction"]) {
+			NSLog(@"skipping spm handler for %@", url);
+		} else if ([scheme isEqualToString: @"spmTestClass"]) {
 			[self updateTestClassHandler: spmHandler];
 		} else if ([scheme isEqualToString: @"file"]) {
 			[self updateRootHandler: spmHandler];
@@ -74,16 +75,14 @@
 	 
 	// [{"className":"testTests","tests":[{"fileOffset":104,"filePath":"\/Users\/rjbowli\/Development\/textmate\/test\/Tests\/testTests\/testTests.swift","functionName":"testExample()"}]}]
 	if (_tests != NULL) {
-		 for (NSDictionary * testClass in _tests) {
-			  NSString * className = testClass[@"className"];
+		 for (SPMTest * test in _tests) {
 			  NSURLComponents *components = [[NSURLComponents alloc] init];
 			  components.scheme = @"spmTestClass";
 			  components.path = @"/";
 			  components.queryItems = @[
 					[NSURLQueryItem queryItemWithName:@"spmPath" value:_projectPath],
-					[NSURLQueryItem queryItemWithName:@"hasChildren" value:@"true"],
-					[NSURLQueryItem queryItemWithName:@"displayName" value:className],
-					[NSURLQueryItem queryItemWithName:@"className" value:className]
+					[NSURLQueryItem queryItemWithName:@"targetName" value:test.targetName],
+					[NSURLQueryItem queryItemWithName:@"className" value:test.className]
 			  ];
 			  NSURL * itemURL = components.URL;
 			  if (itemURL != NULL) {
@@ -99,40 +98,27 @@
 	 NSMutableArray * fileUrls = [NSMutableArray array];
 	 NSString * urlClassName = [spmHandler.url queryForKey: @"className"];
 
-	 if (_tests != NULL) {
-		  for (NSDictionary * testClass in _tests) {
-			NSString * className = testClass[@"className"];
-				if ([urlClassName isEqualToString: className]) {
-					 
-					 for (NSDictionary * test in testClass[@"tests"]) {
-						  NSString * functionName = test[@"functionName"];
-						  NSString * filePath = test[@"filePath"];
-						  NSNumber * fileOffset = test[@"fileOffset"];
-						  
-						  NSString * runIcon = @"TestsUnknownTemplate";
-						  
-						  NSURLComponents *components = [[NSURLComponents alloc] init];
-						  components.scheme = @"spmTestFunction";
-						  components.path = @"/";
-						  components.queryItems = @[
-								[NSURLQueryItem queryItemWithName:@"spmPath" value:_projectPath],
-								[NSURLQueryItem queryItemWithName:@"hasChildren" value:@"false"],
-								[NSURLQueryItem queryItemWithName:@"runIcon" value:runIcon],
-								[NSURLQueryItem queryItemWithName:@"displayName" value:functionName],
-								[NSURLQueryItem queryItemWithName:@"functionName" value:functionName],
-								[NSURLQueryItem queryItemWithName:@"filePath" value:filePath],
-								[NSURLQueryItem queryItemWithName:@"fileOffset" value:[fileOffset description]]
-						  ];
-								
-						  NSURL * itemURL = components.URL;
-						  if (itemURL != NULL) {
-								NSLog(@"%@", itemURL);
-								[fileUrls addObject: itemURL];
-						  }
-					 }
-				}
-		  }
-	 }
+ 	if (_tests != NULL) {
+ 			for (SPMTest * testClass in _tests) {
+ 				if ([urlClassName isEqualToString: testClass.className]) {
+ 					NSLog(@"%@", testClass);
+ 					NSURLComponents *components = [[NSURLComponents alloc] init];
+ 					components.scheme = @"spmTestFunction";
+ 					components.path = @"/";
+ 					components.queryItems = @[
+ 							[NSURLQueryItem queryItemWithName:@"spmPath" value:_projectPath],
+ 							[NSURLQueryItem queryItemWithName:@"targetName" value:testClass.targetName],
+ 							[NSURLQueryItem queryItemWithName:@"className" value:testClass.className],
+ 							[NSURLQueryItem queryItemWithName:@"functionName" value:testClass.functionName]
+ 					];
+							
+ 					NSURL * itemURL = components.URL;
+ 					if (itemURL != NULL) {
+ 							[fileUrls addObject: itemURL];
+ 					}
+ 				}
+ 		  }
+ 	 }
 	 
 	 spmHandler.handler(fileUrls);
 }
@@ -143,18 +129,66 @@
 }
 
 - (void) refreshTests {
-	 dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-		  NSString * spmatePath = [[NSBundle mainBundle] pathForAuxiliaryExecutable:@"spmate"]; 
-		  std::string res = io::exec([spmatePath UTF8String], "test", "list", [_projectPath UTF8String], NULL);
-		  dispatch_async(dispatch_get_main_queue(), ^{
-				NSString * json = [NSString stringWithCxxString:res];
-					 NSLog(@"%@", json);
-				_tests = [NSJSONSerialization JSONObjectWithData:[json dataUsingEncoding:NSUTF8StringEncoding] options:0 error:NULL];
-					 NSLog(@"%@", _tests);
-				[self updateHandlers];
-		  });
-	 });
-	 
+	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+		NSString * spmatePath = [[NSBundle mainBundle] pathForAuxiliaryExecutable:@"spmate"]; 
+		std::string res = io::exec([spmatePath UTF8String], "test", "list", [_projectPath UTF8String], NULL);
+		dispatch_async(dispatch_get_main_queue(), ^{
+			NSString * json = [NSString stringWithCxxString:res];
+			NSLog(@"%@", json);
+			id testInfoArray = [NSJSONSerialization JSONObjectWithData:[json dataUsingEncoding:NSUTF8StringEncoding] options:NSJSONReadingMutableContainers error:NULL];
+			_tests = [NSMutableArray array];
+			for (NSDictionary * testInfo in testInfoArray) {
+				[_tests addObject:[[SPMTest alloc] initWithDictionary:testInfo]];
+			}
+			[self updateHandlers];
+		});
+	});
+}
+
+- (void) runAllTests {
+	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+		NSString * spmatePath = [[NSBundle mainBundle] pathForAuxiliaryExecutable:@"spmate"];
+		std::string res = io::exec([spmatePath UTF8String], "test", "run", [_projectPath UTF8String], NULL);
+		dispatch_async(dispatch_get_main_queue(), ^{
+			NSString * json = [NSString stringWithCxxString:res];
+			[self handleTestResults: json];
+		});
+	});
+}
+
+
+- (void) runTests:(NSArray*) filters {
+	if ([filters count] == 0) {
+		return [self runAllTests];
+	}
+	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+		NSString * spmatePath = [[NSBundle mainBundle] pathForAuxiliaryExecutable:@"spmate"];
+		std::string res = io::exec([spmatePath UTF8String], "test", "run", [_projectPath UTF8String], "--filter", [filters componentsJoinedByString:@","], NULL);
+		dispatch_async(dispatch_get_main_queue(), ^{
+			NSString * json = [NSString stringWithCxxString:res];
+			[self handleTestResults: json];
+		});
+	});
+}
+
+- (void) handleTestResults: (NSString *) json {
+	NSArray * results = [NSJSONSerialization JSONObjectWithData:[json dataUsingEncoding:NSUTF8StringEncoding] options:NSJSONReadingMutableContainers error:NULL];
+	// {"className":"ExampleTestsA","functionName":"testExample0","result":"passed","targetName":"testTests"}
+	for (NSDictionary * result in results) {
+		// For all test classes
+		for (SPMTest * testClass in _tests) {
+			if ([result[@"className"] isEqualToString: testClass.className] &&
+				[result[@"functionName"] isEqualToString: testClass.functionName]) {
+					 
+			 	[testClass willChangeValueForKey:@"runIcon"];
+			 	testClass.result = result[@"result"];
+			 	[testClass didChangeValueForKey:@"runIcon"];
+					 
+				NSLog(@"update test: %@ for %@", result[@"result"], testClass.functionName);
+			 }
+		}
+	}
+	//NSLog(@"%@", json);
 }
 
 @end

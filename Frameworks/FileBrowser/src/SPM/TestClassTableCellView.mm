@@ -1,4 +1,5 @@
 #import "TestClassTableCellView.h"
+#import <OakAppKit/NSImage Additions.h>
 #import <OakAppKit/OakUIConstructionFunctions.h>
 #import <OakAppKit/OakFinderTag.h>
 #import <TMFileReference/TMFileReference.h>
@@ -19,8 +20,12 @@
 		[textField.cell setWraps:NO];
 		[textField.cell setLineBreakMode:NSLineBreakByTruncatingMiddle];
 		
-		_runButton = OakCreateTestUnknownButton();
+		_runButton = [[NSButton alloc] initWithFrame:NSZeroRect];
 		_runButton.refusesFirstResponder = YES;
+		_runButton.buttonType            = NSButtonTypeMomentaryChange;
+		_runButton.bordered              = NO;
+		_runButton.imagePosition         = NSImageOnly;
+		_runButton.imageScaling          = NSImageScaleProportionallyUpOrDown;
 
 		NSStackView* stackView = [NSStackView stackViewWithViews:@[
 			textField, _runButton
@@ -36,6 +41,7 @@
 		[stackView.topAnchor      constraintEqualToAnchor:self.topAnchor      constant: 0].active = YES;
 		[stackView.bottomAnchor   constraintEqualToAnchor:self.bottomAnchor   constant: 0].active = YES;
 		
+		[_runButton bind:NSImageBinding toObject:self withKeyPath:@"objectValue.runIcon" options:nil];
 		[textField bind:NSValueBinding        toObject:self withKeyPath:@"objectValue.displayName" options:nil];
 	}
 	return self;
@@ -77,60 +83,54 @@
 	if(self = [super initWithURL:url])
 	{
 		self.sortingGroup = 1;
-		/*
-		_repository = [SCMManager.sharedInstance repositoryAtURL:[NSURL fileURLWithPath:url.path isDirectory:YES]];
-		if(_repository && _repository.enabled == NO)
-		{
-			self.disambiguationSuffix = @" (disabled)";
-		}
-		else if(![self.URL.query hasSuffix:@"unstaged"] && ![self.URL.query hasSuffix:@"untracked"])
-		{
-			if(_repository)
-			{
-				__weak SCMStatusFileItem* weakSelf = self;
-				_observer = [SCMManager.sharedInstance addObserverToRepositoryAtURL:_repository.URL usingBlock:^(SCMRepository* repository){
-					[weakSelf updateBranchName];
-				}];
-			}
-			else
-			{
-				self.disambiguationSuffix = @" (no status)";
-			}
-		}
-		*/
 	}
 	return self;
 }
 
 - (void)dealloc
 {
-	// [SCMManager.sharedInstance removeObserver:_observer];
+	
 }
 
 - (void)runTests:(id)sender
 {
 	NSLog(@"RUN TESTS - TEST CLASS");
+	
+	SPMObserver * observer = [[SPMManager sharedInstance] existingObserverAtURL: self.URL];
+	[observer runTests: @[]];
+	
 }
+
+- (NSImage *) runIcon {
+	NSString * imageName = @"TestsUnknownTemplate";
+	
+	// If all children passed, then we should show as passed
+	// If any child failed, then we should show as failed
+	// If no children have been run yet, show as unknown
+	NSArray * tests = [[SPMManager sharedInstance] existingTestsAtURL: self.URL];
+	if ([tests count] > 0) {
+		for (SPMTest * test in tests) {
+			if ([test.result isEqualToString:@"failed"]) {
+				imageName = @"TestsFailTemplate";
+			} else if ([test.result isEqualToString:@"passed"] && [imageName isEqualToString:@"TestsUnknownTemplate"]) {
+				imageName = @"TestsPassTemplate";
+			}
+		}
+	}
+	
+	NSImage * img = [NSImage imageNamed:imageName inSameBundleAsClass:[OakRolloverButton class]];
+	[img setTemplate: NO];
+	return img;
+}
+
 
 - (NSString*)localizedName
 {
-	/*
-	if([self.URL.query hasSuffix:@"unstaged"])
-		return @"Uncommitted Changes";
-	else if([self.URL.query hasSuffix:@"untracked"])
-		return @"Untracked Items";
-	else if(_repository)
-		return [NSFileManager.defaultManager displayNameAtPath:_repository.URL.path];
-*/
-	return super.localizedName;
+	return [self.URL queryForKey:@"className"];
 }
 
 - (NSURL*)parentURL
 {
-	/*
-	if([self.URL.query hasSuffix:@"unstaged"] || [self.URL.query hasSuffix:@"untracked"])
-		return [NSURL URLWithString:[NSString stringWithFormat:@"scm://localhost%@/", [self.URL.path stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLPathAllowedCharacterSet]]];
-	*/
 	return [NSURL fileURLWithPath:self.URL.path];
 }
 @end

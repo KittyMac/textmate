@@ -1,7 +1,7 @@
 #ifndef __SPM_OBSERVER__
 #define __SPM_OBSERVER__
 
-#import <scm/status.h>
+#import "SPMTest.h"
 
 typedef void(^HandlerBlock)(NSArray<NSURL*>*); 
 
@@ -12,7 +12,7 @@ typedef void(^HandlerBlock)(NSArray<NSURL*>*);
 
 @interface SPMObserver : NSObject
 @property (nonatomic) NSString* projectPath;
-@property (nonatomic) NSArray* tests;
+@property (nonatomic) NSMutableArray* tests;
 
 @property (nonatomic) NSMutableArray* handlers;
 // 
@@ -26,7 +26,11 @@ typedef void(^HandlerBlock)(NSArray<NSURL*>*);
 - (void) addHandler:(HandlerBlock) handler forURL:(NSURL *) url;
 - (void) removeHandler:(HandlerBlock) handler;
 
+- (void) refreshAll;
 - (void) refreshTests;
+
+- (void) runAllTests;
+- (void) runTests:(NSArray*) filters;
 
 @end
 

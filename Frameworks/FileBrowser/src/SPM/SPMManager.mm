@@ -15,6 +15,13 @@
 	}
 	return nil;
 }
+- (NSURL *)urlForKey:(id)aKey {
+	NSString * value = [self queryForKey: aKey];
+	if (value) {
+		return [NSURL fileURLWithPath: value];
+	}
+	return nil;
+}
 @end
 
 
@@ -41,21 +48,10 @@
 - (SPMObserver*)observerAtURL:(NSURL*)url
 						 usingBlock:(HandlerBlock) handler
 {
-	NSURL * projectURL = url;
+	NSURL * projectURL = [url urlForKey:@"spmPath"] ?: url;	
 	
-	NSLog(@"SPMManager check url: %@", url);
-	
-	// Is this a URL for a portion of an existing SPM project?
-	NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
-	for (NSURLQueryItem *item in components.queryItems) {
-	    if ([item.name isEqualToString:@"spmPath"]) {
-			 projectURL = [NSURL fileURLWithPath: item.value];
-			 NSLog(@"SPMManager found spmPath: %@", projectURL);
-	    }
-	}
-	
-	if(SPMObserver* observer = [_observers objectForKey:projectURL]) {
-		NSLog(@"SPMManager assigned hanlder for: %@", url);
+	if (SPMObserver* observer = [_observers objectForKey:projectURL]) {
+		NSLog(@"SPMManager assigned handler for: %@", url);
 		[observer addHandler: handler forURL: url];
 		return observer;
 	}
@@ -63,6 +59,8 @@
 	// Does this directory contain a Package.swift?
 	for(NSURL* otherURL in [NSFileManager.defaultManager contentsOfDirectoryAtURL:url includingPropertiesForKeys:nil options:0 error:nil]) {
 		if ([otherURL.lastPathComponent isEqualToString: @"Package.swift"]) {
+			NSLog(@"SPMManager created new observer for: %@", url);
+			
 			SPMObserver * observer = [[SPMObserver alloc] initWithURL:url];
 			[observer addHandler: handler forURL: url];
 			[_observers setObject:observer forKey:projectURL];
@@ -70,7 +68,49 @@
 		}
 	}
 	
+	NSLog(@"SPMManager failed to find project for: %@", url);	
 	return nil;
+}
+
+- (SPMObserver*)existingObserverAtURL:(NSURL*)url
+{
+	NSURL * projectURL = [url urlForKey:@"spmPath"] ?: url;	
+	return [_observers objectForKey:projectURL];
+}
+
+- (SPMTest*)existingTestAtURL:(NSURL*)url
+{
+	if (SPMObserver * observer = [self existingObserverAtURL: url]) {
+		NSString * targetName = [url queryForKey:@"targetName"];
+		NSString * className = [url queryForKey:@"className"];
+		NSString * functionName = [url queryForKey:@"functionName"];
+		for (SPMTest * test in observer.tests) {
+			if ([test.targetName isEqualToString: targetName] &&
+				[test.className isEqualToString: className] &&
+				[test.functionName isEqualToString: functionName]) {
+					return test;
+			}
+		}
+	}
+
+	return nil;
+}
+
+- (NSArray*)existingTestsAtURL:(NSURL*)url
+{
+	NSMutableArray * allTests = [NSMutableArray array];
+	if (SPMObserver * observer = [self existingObserverAtURL: url]) {
+		NSString * targetName = [url queryForKey:@"targetName"];
+		NSString * className = [url queryForKey:@"className"];
+		for (SPMTest * test in observer.tests) {
+			if ([test.targetName isEqualToString: targetName] &&
+				[test.className isEqualToString: className]) {
+				[allTests addObject: test];
+			}
+		}
+	}
+
+	return allTests;
 }
 
 @end
