@@ -1,6 +1,10 @@
 #import "SPMObserver.h"
 #import <scm/status.h>
 
+NSImage * spmTestsPassImage;
+NSImage * spmTestsFailImage;
+NSImage * spmTestsUnknownImage;
+
 @interface NSURL (QueryLookup)
 - (id)queryForKey:(id)aKey;
 - (NSURL *)urlForKey:(id)aKey;

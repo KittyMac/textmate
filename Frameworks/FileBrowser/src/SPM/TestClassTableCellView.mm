@@ -102,28 +102,6 @@
 	
 }
 
-- (NSImage *) runIcon {
-	NSString * imageName = @"TestsUnknownTemplate";
-	
-	// If all children passed, then we should show as passed
-	// If any child failed, then we should show as failed
-	// If no children have been run yet, show as unknown
-	NSArray * tests = [[SPMManager sharedInstance] existingTestsAtURL: self.URL];
-	if ([tests count] > 0) {
-		for (SPMTest * test in tests) {
-			if ([test.result isEqualToString:@"failed"]) {
-				imageName = @"TestsFailTemplate";
-			} else if ([test.result isEqualToString:@"passed"] && [imageName isEqualToString:@"TestsUnknownTemplate"]) {
-				imageName = @"TestsPassTemplate";
-			}
-		}
-	}
-	
-	NSImage * img = [NSImage imageNamed:imageName inSameBundleAsClass:[OakRolloverButton class]];
-	[img setTemplate: NO];
-	return img;
-}
-
 - (NSURL*)parentURL
 {
 	return [NSURL fileURLWithPath:self.URL.path];

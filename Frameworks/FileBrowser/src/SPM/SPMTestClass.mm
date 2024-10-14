@@ -34,16 +34,13 @@
 }
 
 - (NSImage *) runIcon {
-	NSString * imageName = @"TestsUnknownTemplate";
 	if ([_result isEqualToString: @"passed"]) {
-		imageName = @"TestsPassTemplate";
+		return spmTestsPassImage;
 	}
 	if ([_result isEqualToString: @"failed"]) {
-		imageName = @"TestsFailTemplate";
+		return spmTestsFailImage;
 	}
-	NSImage * img = [NSImage imageNamed:imageName inSameBundleAsClass:[OakRolloverButton class]];
-	[img setTemplate: NO];
-	return img;
+	return spmTestsUnknownImage;
 }
 
 @end

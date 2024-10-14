@@ -4,6 +4,10 @@
 #include <io/exec.h>
 #import <OakFoundation/NSString Additions.h>
 #import <OakAppKit/NSAlert Additions.h>
+#import <OakAppKit/NSImage Additions.h>
+#import <OakAppKit/OakUIConstructionFunctions.h>
+#import <OakAppKit/OakFinderTag.h>
+
 
 @implementation NSURL (QueryLookup)
 - (id)queryForKey:(id)aKey {
@@ -33,6 +37,20 @@
 + (instancetype)sharedInstance
 {
 	static SPMManager* sharedInstance = [self new];
+	
+	if (spmTestsPassImage == NULL) {
+		spmTestsPassImage = [NSImage imageNamed:@"TestsPassTemplate" inSameBundleAsClass:[OakRolloverButton class]];
+		[spmTestsPassImage setTemplate: NO];
+	}
+	if (spmTestsFailImage == NULL) {
+		spmTestsFailImage = [NSImage imageNamed:@"TestsFailTemplate" inSameBundleAsClass:[OakRolloverButton class]];
+		[spmTestsFailImage setTemplate: NO];
+	}
+	if (spmTestsUnknownImage == NULL) {
+		spmTestsUnknownImage = [NSImage imageNamed:@"TestsUnknownTemplate" inSameBundleAsClass:[OakRolloverButton class]];
+		[spmTestsUnknownImage setTemplate: NO];
+	}
+	
 	return sharedInstance;
 }
 

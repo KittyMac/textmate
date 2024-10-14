@@ -75,14 +75,14 @@
 	}
 	[fileUrls addObject: [NSURL URLWithString: @"separator://separator"]];
 	 
-	 for (SPMTest * test in _tests) {
+	 for (SPMTestClass * testClass in _testClasses) {
 		  NSURLComponents *components = [[NSURLComponents alloc] init];
 		  components.scheme = @"spmTestClass";
 		  components.path = @"/";
 		  components.queryItems = @[
 				[NSURLQueryItem queryItemWithName:@"spmPath" value:_projectPath],
-				[NSURLQueryItem queryItemWithName:@"targetName" value:test.targetName],
-				[NSURLQueryItem queryItemWithName:@"className" value:test.className]
+				[NSURLQueryItem queryItemWithName:@"targetName" value:testClass.targetName],
+				[NSURLQueryItem queryItemWithName:@"className" value:testClass.className]
 		  ];
 		  NSURL * itemURL = components.URL;
 		  if (itemURL != NULL) {
@@ -94,12 +94,13 @@
 }
 
 - (void) updateTestClassHandler: (SPMHandler*) spmHandler {
-	 NSMutableArray * fileUrls = [NSMutableArray array];
-	 NSString * urlClassName = [spmHandler.url queryForKey: @"className"];
+	NSMutableArray * fileUrls = [NSMutableArray array];
+	NSString * urlTargetName = [spmHandler.url queryForKey: @"targetName"];
+	NSString * urlClassName = [spmHandler.url queryForKey: @"className"];
 
 	for (SPMTest * testClass in _tests) {
-		if ([urlClassName isEqualToString: testClass.className]) {
-			NSLog(@"%@", testClass);
+		if ([urlTargetName isEqualToString: testClass.targetName] &&
+			[urlClassName isEqualToString: testClass.className]) {
 			NSURLComponents *components = [[NSURLComponents alloc] init];
 			components.scheme = @"spmTestFunction";
 			components.path = @"/";
@@ -116,6 +117,8 @@
 			}
 		}
 	}
+	
+	NSLog(@"fileUrls.count: %lu for %@.%@", fileUrls.count, urlTargetName, urlClassName);
 	 
 	 spmHandler.handler(fileUrls);
 }
@@ -157,19 +160,35 @@
 			NSArray * existingTestClasses = _testClasses;
 			_testClasses = [NSMutableArray array];
 			for (NSDictionary * testInfo in testInfoArray) {
+				BOOL didExist = false;
+				for (SPMTest * existingTestClass in _testClasses) {
+					if ([existingTestClass.targetName isEqualToString: testInfo[@"targetName"]] &&
+						[existingTestClass.className isEqualToString: testInfo[@"className"]]) {
+						didExist = true;
+					}
+				}
+				if (didExist) {
+					continue;
+				}
+				
 				BOOL didUpdate = false;
 				for (SPMTest * existingTestClass in existingTestClasses) {
 					if ([existingTestClass.targetName isEqualToString: testInfo[@"targetName"]] &&
 						[existingTestClass.className isEqualToString: testInfo[@"className"]]) {
 						[existingTestClass updateWithDictionary: testInfo];
 						[_testClasses addObject: existingTestClass];
+						NSLog(@"updating test class: %@", testInfo);
 						didUpdate = true;
 					}
 				}
 				if (didUpdate == false) {
+					NSLog(@"adding test class: %@", testInfo);
 					[_testClasses addObject:[[SPMTestClass alloc] initWithDictionary:testInfo]];
 				}
 			}
+			
+			NSLog(@"_tests.count: %lu", _tests.count);
+			NSLog(@"_testClasses.count: %lu", _testClasses.count);
 			
 			[self updateHandlers];
 		});
@@ -229,7 +248,7 @@
 		int numFail = 0;
 		
 		for (SPMTest * test in _tests) {
-			if (//[testClass.targetName isEqualToString: test.targetName] &&
+			if ([testClass.targetName isEqualToString: test.targetName] &&
 				[testClass.className isEqualToString: test.className]) {
 				if ([test.result isEqualToString: @"passed"]) {
 					numPass += 1;
