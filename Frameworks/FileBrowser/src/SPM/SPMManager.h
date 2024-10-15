@@ -4,6 +4,8 @@
 NSImage * spmTestsPassImage;
 NSImage * spmTestsFailImage;
 NSImage * spmTestsUnknownImage;
+NSImage * spmTestsClearImage;
+NSImage * spmTestsProgressImage;
 
 @interface NSURL (QueryLookup)
 - (id)queryForKey:(id)aKey;

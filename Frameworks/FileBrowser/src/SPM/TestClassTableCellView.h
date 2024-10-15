@@ -1,3 +1,5 @@
+#import "RunTestButton.h"
+
 @interface TestClassTableCellView : NSTableCellView
-@property (nonatomic) NSButton* runButton;
+@property (nonatomic) RunTestButton* runButton;
 @end

@@ -2106,14 +2106,14 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 	}
 	if ([item.URL.scheme hasPrefix: @"spmTestClass"]) {
 		TestClassTableCellView * view = [[TestClassTableCellView alloc] init];
-		view.runButton.action = @selector(runTests:);
-		view.runButton.target = item;
+		view.runButton.button.action = @selector(runTests:);
+		view.runButton.button.target = item;
 		return view;
 	}
 	if ([item.URL.scheme hasPrefix: @"spmTestFunction"]) {
 		TestFunctionTableCellView * view = [[TestFunctionTableCellView alloc] init];
-		view.runButton.action = @selector(runTests:);
-		view.runButton.target = item;
+		view.runButton.button.action = @selector(runTests:);
+		view.runButton.button.target = item;
 		return view;
 	}
 	

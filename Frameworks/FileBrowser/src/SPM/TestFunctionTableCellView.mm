@@ -5,6 +5,7 @@
 #import <TMFileReference/TMFileReference.h>
 
 #import "SPMManager.h"
+#import "RunTestButton.h"
 #import "../FileItem.h"
 
 @interface TestFunctionTableCellView () <NSTextFieldDelegate>
@@ -31,12 +32,7 @@
 		[textField.cell setLineBreakMode:NSLineBreakByTruncatingMiddle];
 		//textField.formatter = [[FileItemFormatter alloc] initWithTableCellView:self];
 		
-		_runButton = [[NSButton alloc] initWithFrame:NSZeroRect];
-		_runButton.refusesFirstResponder = YES;
-		_runButton.buttonType            = NSButtonTypeMomentaryChange;
-		_runButton.bordered              = NO;
-		_runButton.imagePosition         = NSImageOnly;
-		_runButton.imageScaling          = NSImageScaleProportionallyUpOrDown;
+		_runButton = [[RunTestButton alloc] initWithFrame:NSZeroRect];
 		
 		NSStackView* stackView = [NSStackView stackViewWithViews:@[
 			// _openButton, textField
@@ -111,8 +107,7 @@
 {
 	NSLog(@"RUN TESTS - TEST FUNCTION");
 	SPMObserver * observer = [[SPMManager sharedInstance] existingObserverAtURL: self.URL];
-	NSString * filter = [NSString stringWithFormat:@"%@/%@", _test.className, _test.functionName];
-	[observer runTests: @[filter]];
+	[observer runTests: @[_test]];
 }
 
 - (BOOL)isDirectory

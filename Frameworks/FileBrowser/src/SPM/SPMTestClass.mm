@@ -26,14 +26,27 @@
 
  	[self willChangeValueForKey:@"runIcon"];
 	_result = info[@"result"];
- 	[self willChangeValueForKey:@"runIcon"];
+ 	[self didChangeValueForKey:@"runIcon"];
 }
 
 - (NSString *) uniqueId {
 	return [NSString stringWithFormat: @"%@.%@", _targetName, _className];
 }
 
+- (NSString *) filter {
+	return [NSString stringWithFormat:@"%@", _className];
+}
+
+- (void) beginTest {
+ 	[self willChangeValueForKey:@"runIcon"];
+	_result = @"progress";
+ 	[self didChangeValueForKey:@"runIcon"];
+}
+
 - (NSImage *) runIcon {
+	if ([_result isEqualToString: @"progress"]) {
+		return spmTestsProgressImage;
+	}
 	if ([_result isEqualToString: @"passed"]) {
 		return spmTestsPassImage;
 	}

@@ -50,6 +50,14 @@
 		spmTestsUnknownImage = [NSImage imageNamed:@"TestsUnknownTemplate" inSameBundleAsClass:[OakRolloverButton class]];
 		[spmTestsUnknownImage setTemplate: NO];
 	}
+	if (spmTestsClearImage == NULL) {
+		spmTestsClearImage = [NSImage imageNamed:@"TestsClearTemplate" inSameBundleAsClass:[OakRolloverButton class]];
+		[spmTestsClearImage setTemplate: NO];
+	}
+	if (spmTestsProgressImage == NULL) {
+		spmTestsProgressImage = [NSImage imageNamed:@"TestsProgressTemplate" inSameBundleAsClass:[OakRolloverButton class]];
+		[spmTestsProgressImage setTemplate: NO];
+	}
 	
 	return sharedInstance;
 }

@@ -1,5 +1,7 @@
 #import "SPMObserver.h"
 #import "SPMManager.h"
+#import "SPMTest.h"
+#import "SPMTestClass.h"
 #include <io/path.h>
 #include <io/exec.h>
 #import <OakFoundation/NSString Additions.h>
@@ -210,23 +212,30 @@
 	});
 }
 
-- (void) runAllTests {
-	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-		NSString * spmatePath = [[NSBundle mainBundle] pathForAuxiliaryExecutable:@"spmate"];
-		NSLog(@"%@ %@ %@ %@", spmatePath, @"test", @"run", _projectPath);
-		std::string res = io::exec([spmatePath UTF8String], "test", "run", [_projectPath UTF8String], NULL);
-		dispatch_async(dispatch_get_main_queue(), ^{
-			NSString * json = [NSString stringWithCxxString:res];
-			[self handleTestResults: json];
-		});
-	});
-}
-
-
-- (void) runTests:(NSArray*) filters {
-	if ([filters count] == 0) {
-		return [self runAllTests];
+- (void) runTests:(NSArray*) tests {
+	NSMutableArray * filters = [NSMutableArray array];
+	
+	for (SPMTest * test in tests) {
+		[filters addObject: test.filter];
 	}
+	
+	for (id maybeTest in tests) {
+		if ([maybeTest isKindOfClass: [SPMTest class]]) {
+			[maybeTest beginTest];
+		}
+		if ([maybeTest isKindOfClass: [SPMTestClass class]]) {
+			NSString * targetName = [(SPMTestClass *)maybeTest targetName];
+			NSString * className = [(SPMTestClass *)maybeTest className];
+			[maybeTest beginTest];
+			for(SPMTest * test in _tests) {
+				if ([test.targetName isEqualToString: targetName] &&
+					[test.className isEqualToString: className]) {
+					[test beginTest];
+				}
+			}
+		}
+	}
+	
 	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
 		NSString * spmatePath = [[NSBundle mainBundle] pathForAuxiliaryExecutable:@"spmate"];
 		NSLog(@"%@ %@ %@ %@ %@ %@", spmatePath, @"test", @"run", _projectPath, @"--filter", [filters componentsJoinedByString:@","]);
@@ -285,7 +294,7 @@
 		}
 		[testClass didChangeValueForKey:@"runIcon"];
 		
-		NSLog(@"update test class: %@ for %@", testClass.result, testClass.className);
+		// NSLog(@"update test class: %@ for %@", testClass.result, testClass.className);
 	}
 	//NSLog(@"%@", json);
 }

@@ -5,6 +5,7 @@
 #import <TMFileReference/TMFileReference.h>
 
 #import "SPMManager.h"
+#import "RunTestButton.h"
 #import "../FileItem.h"
 
 @interface TestClassTableCellView () <NSTextFieldDelegate>
@@ -20,12 +21,7 @@
 		[textField.cell setWraps:NO];
 		[textField.cell setLineBreakMode:NSLineBreakByTruncatingMiddle];
 		
-		_runButton = [[NSButton alloc] initWithFrame:NSZeroRect];
-		_runButton.refusesFirstResponder = YES;
-		_runButton.buttonType            = NSButtonTypeMomentaryChange;
-		_runButton.bordered              = NO;
-		_runButton.imagePosition         = NSImageOnly;
-		_runButton.imageScaling          = NSImageScaleProportionallyUpOrDown;
+		_runButton = [[RunTestButton alloc] initWithFrame:NSZeroRect];
 
 		NSStackView* stackView = [NSStackView stackViewWithViews:@[
 			textField, _runButton
@@ -42,7 +38,7 @@
 		[stackView.bottomAnchor   constraintEqualToAnchor:self.bottomAnchor   constant: 0].active = YES;
 		
 		[_runButton bind:NSImageBinding toObject:self withKeyPath:@"objectValue.testClass.runIcon" options:nil];
-		[textField bind:NSValueBinding        toObject:self withKeyPath:@"objectValue.testClass.className" options:nil];
+		[textField bind:NSValueBinding toObject:self withKeyPath:@"objectValue.testClass.className" options:nil];
 	}
 	return self;
 }
@@ -97,8 +93,7 @@
 {
 	NSLog(@"RUN TESTS - TEST CLASS");
 	SPMObserver * observer = [[SPMManager sharedInstance] existingObserverAtURL: self.URL];
-	NSString * filter = [NSString stringWithFormat:@"%@", _testClass.className];
-	[observer runTests: @[filter]];	
+	[observer runTests: @[_testClass]];	
 }
 
 - (NSString*)localizedName

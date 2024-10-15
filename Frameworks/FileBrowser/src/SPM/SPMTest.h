@@ -12,6 +12,8 @@
 - (id) initWithDictionary: (NSDictionary *) info;
 - (void) updateWithDictionary: (NSDictionary *) info;
 - (NSString *) uniqueId;
+- (NSString *) filter;
+- (void) beginTest;
 - (NSImage *) runIcon;
 
 @end

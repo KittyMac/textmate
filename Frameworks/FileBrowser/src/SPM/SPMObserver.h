@@ -31,8 +31,7 @@ typedef void(^HandlerBlock)(NSArray<NSURL*>*);
 - (void) refreshAll;
 - (void) refreshTests;
 
-- (void) runAllTests;
-- (void) runTests:(NSArray*) filters;
+- (void) runTests:(NSArray*) tests;
 
 @end
 
