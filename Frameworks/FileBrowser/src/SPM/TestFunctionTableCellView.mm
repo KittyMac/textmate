@@ -89,11 +89,6 @@
 
 + (id)makeObserverForURL:(NSURL*)url usingBlock:(void(^)(NSArray<NSURL*>*))handler
 {
-	// Auto-detect the type of directory this is and use the correct observer for it
-	SPMObserver * observer = [[SPMManager sharedInstance] observerAtURL: url usingBlock: handler];
-	if (observer != NULL) {
-		return observer;
-	}
 	return nil;
 }
 

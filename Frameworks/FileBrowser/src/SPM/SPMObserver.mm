@@ -35,6 +35,9 @@
 - (void) addHandler:(HandlerBlock) handler
 				 forURL: (NSURL*) url {
 	 SPMHandler * spmHandler = [[SPMHandler alloc] initWithURL: url usingBlock: handler];
+	 if ([_handlers count] > 2) {
+		 [_handlers removeObjectAtIndex: 0];
+	 }
 	 [_handlers addObject: spmHandler];
 	 [self updateHandlers];
 }
@@ -47,7 +50,7 @@
 	 }
 }
 
-- (void) updateHandlers {
+- (void) updateHandler:(SPMHandler *)spmHandler {
 	for (SPMHandler * spmHandler in [NSArray arrayWithArray: _handlers]) {
 		NSURL * url = [spmHandler url];
 		NSString * scheme = [url scheme];
@@ -60,6 +63,12 @@
 		} else {
 			NSLog(@"skipping spm handler for %@", url);
 		}
+	}
+}
+
+- (void) updateHandlers {
+	for (SPMHandler * spmHandler in [NSArray arrayWithArray: _handlers]) {
+		[self updateHandler: spmHandler];
 	}
 }
 
