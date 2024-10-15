@@ -102,6 +102,11 @@
 	
 }
 
+- (NSString*)localizedName
+{
+	return _testClass.className;
+}
+
 - (NSURL*)parentURL
 {
 	return [NSURL fileURLWithPath:self.URL.path];

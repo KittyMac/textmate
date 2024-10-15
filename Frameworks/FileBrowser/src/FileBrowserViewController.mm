@@ -1448,7 +1448,7 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 			return NSOrderedAscending;
 		}
 		if (lhs.sortingGroup != 0) {
-			return NSOrderedSame;
+			return [lhs.localizedName compare: rhs.localizedName];
 		}
 		
 		if(_sortDirectoriesBeforeFiles)

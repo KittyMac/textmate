@@ -122,12 +122,10 @@
 				
 			NSURL * itemURL = components.URL;
 			if (itemURL != NULL) {
-					[fileUrls addObject: itemURL];
+				[fileUrls addObject: itemURL];
 			}
 		}
 	}
-	
-	NSLog(@"fileUrls.count: %lu for %@.%@", fileUrls.count, urlTargetName, urlClassName);
 	 
 	 spmHandler.handler(fileUrls);
 }
@@ -196,6 +194,14 @@
 				}
 			}
 			
+			[_tests sortUsingComparator: ^NSComparisonResult(SPMTest* obj1, SPMTest* obj2) {
+				return [[obj1 className] compare:[obj2 className]];
+			}];
+			
+			[_testClasses sortUsingComparator: ^NSComparisonResult(SPMTestClass* obj1, SPMTestClass* obj2) {
+				return [[obj1 className] compare:[obj2 className]];
+			}];
+						
 			NSLog(@"_tests.count: %lu", _tests.count);
 			NSLog(@"_testClasses.count: %lu", _testClasses.count);
 			
