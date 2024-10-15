@@ -219,9 +219,12 @@
 		[filters addObject: test.filter];
 	}
 	
+	NSMutableArray * runningTests = [NSMutableArray array];
+	
 	for (id maybeTest in tests) {
 		if ([maybeTest isKindOfClass: [SPMTest class]]) {
 			[maybeTest beginTest];
+			[runningTests addObject: maybeTest];
 		}
 		if ([maybeTest isKindOfClass: [SPMTestClass class]]) {
 			NSString * targetName = [(SPMTestClass *)maybeTest targetName];
@@ -231,6 +234,7 @@
 				if ([test.targetName isEqualToString: targetName] &&
 					[test.className isEqualToString: className]) {
 					[test beginTest];
+					[runningTests addObject: test];
 				}
 			}
 		}
@@ -242,12 +246,14 @@
 		std::string res = io::exec([spmatePath UTF8String], "test", "run", [_projectPath UTF8String], "--filter", [[filters componentsJoinedByString:@","] UTF8String], NULL);
 		dispatch_async(dispatch_get_main_queue(), ^{
 			NSString * json = [NSString stringWithCxxString:res];
-			[self handleTestResults: json];
+			[self handleTestResults: json
+								forTests: runningTests];
 		});
 	});
 }
 
-- (void) handleTestResults: (NSString *) json {
+- (void) handleTestResults: (NSString *) json
+						forTests: (NSArray*) runningTests {
 	NSArray * results = [NSJSONSerialization JSONObjectWithData:[json dataUsingEncoding:NSUTF8StringEncoding] options:NSJSONReadingMutableContainers error:NULL];
 	// {"className":"ExampleTestsA","functionName":"testExample0","result":"passed","targetName":"testTests"}
 	
@@ -290,11 +296,18 @@
 		} else if (numPass > 0) {
 		 	testClass.result = @"passed";
 		} else {
-			testClass.result = NULL;
+			//testClass.result = NULL;
 		}
 		[testClass didChangeValueForKey:@"runIcon"];
 		
 		// NSLog(@"update test class: %@ for %@", testClass.result, testClass.className);
+	}
+	
+	// sanity: all the tests we started should be done now, so reset any which are in progress
+	for(SPMTest * test in runningTests) {
+		if ([test.result isEqualToString: @"progress"]) {
+			test.result = NULL;
+		}
 	}
 	//NSLog(@"%@", json);
 }
