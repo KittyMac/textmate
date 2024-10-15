@@ -230,6 +230,8 @@
 			NSString * targetName = [(SPMTestClass *)maybeTest targetName];
 			NSString * className = [(SPMTestClass *)maybeTest className];
 			[maybeTest beginTest];
+			[runningTests addObject: maybeTest];
+			
 			for(SPMTest * test in _tests) {
 				if ([test.targetName isEqualToString: targetName] &&
 					[test.className isEqualToString: className]) {
@@ -306,7 +308,9 @@
 	// sanity: all the tests we started should be done now, so reset any which are in progress
 	for(SPMTest * test in runningTests) {
 		if ([test.result isEqualToString: @"progress"]) {
+			[test willChangeValueForKey:@"runIcon"];
 			test.result = NULL;
+			[test didChangeValueForKey:@"runIcon"];
 		}
 	}
 	//NSLog(@"%@", json);
