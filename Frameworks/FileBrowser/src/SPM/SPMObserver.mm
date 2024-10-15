@@ -228,7 +228,7 @@
 	}
 	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
 		NSString * spmatePath = [[NSBundle mainBundle] pathForAuxiliaryExecutable:@"spmate"];
-		std::string res = io::exec([spmatePath UTF8String], "test", "run", [_projectPath UTF8String], "--filter", [filters componentsJoinedByString:@","], NULL);
+		std::string res = io::exec([spmatePath UTF8String], "test", "run", [_projectPath UTF8String], "--filter", [[filters componentsJoinedByString:@","] UTF8String], NULL);
 		dispatch_async(dispatch_get_main_queue(), ^{
 			NSString * json = [NSString stringWithCxxString:res];
 			[self handleTestResults: json];

@@ -2112,6 +2112,8 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 	}
 	if ([item.URL.scheme hasPrefix: @"spmTestFunction"]) {
 		TestFunctionTableCellView * view = [[TestFunctionTableCellView alloc] init];
+		view.runButton.action = @selector(runTests:);
+		view.runButton.target = item;
 		return view;
 	}
 	

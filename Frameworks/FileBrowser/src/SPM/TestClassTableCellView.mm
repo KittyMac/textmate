@@ -96,10 +96,9 @@
 - (void)runTests:(id)sender
 {
 	NSLog(@"RUN TESTS - TEST CLASS");
-	
 	SPMObserver * observer = [[SPMManager sharedInstance] existingObserverAtURL: self.URL];
-	[observer runTests: @[]];
-	
+	NSString * filter = [NSString stringWithFormat:@"%@.%@", _testClass.targetName, _testClass.className];
+	[observer runTests: @[filter]];	
 }
 
 - (NSString*)localizedName

@@ -110,6 +110,9 @@
 - (void)runTests:(id)sender
 {
 	NSLog(@"RUN TESTS - TEST FUNCTION");
+	SPMObserver * observer = [[SPMManager sharedInstance] existingObserverAtURL: self.URL];
+	NSString * filter = [NSString stringWithFormat:@"%@.%@/%@", _test.targetName, _test.className, _test.functionName];
+	[observer runTests: @[filter]];
 }
 
 - (BOOL)isDirectory
