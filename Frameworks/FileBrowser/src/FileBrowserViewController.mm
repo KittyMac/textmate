@@ -1,4 +1,5 @@
 #import "SPM/SeparatorTableCellView.h"
+#import "SPM/TestTargetTableCellView.h"
 #import "SPM/TestClassTableCellView.h"
 #import "SPM/TestFunctionTableCellView.h"
 
@@ -2103,6 +2104,12 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 {
 	if ([item.URL.scheme hasPrefix: @"separator"]) {
 		return [[SeparatorTableCellView alloc] init];
+	}
+	if ([item.URL.scheme hasPrefix: @"spmTestTarget"]) {
+		TestTargetTableCellView * view = [[TestTargetTableCellView alloc] init];
+		view.runButton.button.action = @selector(runTests:);
+		view.runButton.button.target = item;
+		return view;
 	}
 	if ([item.URL.scheme hasPrefix: @"spmTestClass"]) {
 		TestClassTableCellView * view = [[TestClassTableCellView alloc] init];

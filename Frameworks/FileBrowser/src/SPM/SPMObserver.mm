@@ -2,6 +2,7 @@
 #import "SPMManager.h"
 #import "SPMTest.h"
 #import "SPMTestClass.h"
+#import "SPMTestTarget.h"
 #include <io/path.h>
 #include <io/exec.h>
 #import <OakFoundation/NSString Additions.h>
@@ -29,6 +30,7 @@
 		  _handlers = [[NSMutableArray alloc] init];
 		  _tests = [[NSMutableArray alloc] init];
 		  _testClasses = [[NSMutableArray alloc] init];
+		  _testTargets = [[NSMutableArray alloc] init];
 		  [self refreshAll];
 	 }
 	 return self;
@@ -60,6 +62,8 @@
 			NSLog(@"skipping spm handler for %@", url);
 		} else if ([scheme isEqualToString: @"spmTestClass"]) {
 			[self updateTestClassHandler: spmHandler];
+		} else if ([scheme isEqualToString: @"spmTestTarget"]) {
+			[self updateTestTargetHandler: spmHandler];
 		} else if ([scheme isEqualToString: @"file"]) {
 			[self updateRootHandler: spmHandler];
 		} else {
@@ -86,14 +90,13 @@
 	}
 	[fileUrls addObject: [NSURL URLWithString: @"separator://separator"]];
 	 
-	 for (SPMTestClass * testClass in _testClasses) {
+	 for (SPMTestTarget * testTarget in _testTargets) {
 		  NSURLComponents *components = [[NSURLComponents alloc] init];
-		  components.scheme = @"spmTestClass";
+		  components.scheme = @"spmTestTarget";
 		  components.path = @"/";
 		  components.queryItems = @[
 				[NSURLQueryItem queryItemWithName:@"spmPath" value:_projectPath],
-				[NSURLQueryItem queryItemWithName:@"targetName" value:testClass.targetName],
-				[NSURLQueryItem queryItemWithName:@"className" value:testClass.className]
+				[NSURLQueryItem queryItemWithName:@"targetName" value:testTarget.targetName]
 		  ];
 		  NSURL * itemURL = components.URL;
 		  if (itemURL != NULL) {
@@ -104,22 +107,47 @@
 	  spmHandler.handler(fileUrls);
 }
 
+- (void) updateTestTargetHandler: (SPMHandler*) spmHandler {
+	NSMutableArray * fileUrls = [NSMutableArray array];
+	NSString * urlTargetName = [spmHandler.url queryForKey: @"targetName"];
+
+	for (SPMTestClass * testClass in _testClasses) {
+		if ([urlTargetName isEqualToString: testClass.targetName]) {
+			NSURLComponents *components = [[NSURLComponents alloc] init];
+			components.scheme = @"spmTestClass";
+			components.path = @"/";
+			components.queryItems = @[
+					[NSURLQueryItem queryItemWithName:@"spmPath" value:_projectPath],
+					[NSURLQueryItem queryItemWithName:@"targetName" value:testClass.targetName],
+					[NSURLQueryItem queryItemWithName:@"className" value:testClass.className]
+			];
+				
+			NSURL * itemURL = components.URL;
+			if (itemURL != NULL) {
+				[fileUrls addObject: itemURL];
+			}
+		}
+	}
+	 
+	 spmHandler.handler(fileUrls);
+}
+
 - (void) updateTestClassHandler: (SPMHandler*) spmHandler {
 	NSMutableArray * fileUrls = [NSMutableArray array];
 	NSString * urlTargetName = [spmHandler.url queryForKey: @"targetName"];
 	NSString * urlClassName = [spmHandler.url queryForKey: @"className"];
 
-	for (SPMTest * testClass in _tests) {
-		if ([urlTargetName isEqualToString: testClass.targetName] &&
-			[urlClassName isEqualToString: testClass.className]) {
+	for (SPMTest * test in _tests) {
+		if ([urlTargetName isEqualToString: test.targetName] &&
+			[urlClassName isEqualToString: test.className]) {
 			NSURLComponents *components = [[NSURLComponents alloc] init];
 			components.scheme = @"spmTestFunction";
 			components.path = @"/";
 			components.queryItems = @[
 					[NSURLQueryItem queryItemWithName:@"spmPath" value:_projectPath],
-					[NSURLQueryItem queryItemWithName:@"targetName" value:testClass.targetName],
-					[NSURLQueryItem queryItemWithName:@"className" value:testClass.className],
-					[NSURLQueryItem queryItemWithName:@"functionName" value:testClass.functionName]
+					[NSURLQueryItem queryItemWithName:@"targetName" value:test.targetName],
+					[NSURLQueryItem queryItemWithName:@"className" value:test.className],
+					[NSURLQueryItem queryItemWithName:@"functionName" value:test.functionName]
 			];
 				
 			NSURL * itemURL = components.URL;
@@ -146,7 +174,7 @@
 			NSLog(@"%@", json);
 			id testInfoArray = [NSJSONSerialization JSONObjectWithData:[json dataUsingEncoding:NSUTF8StringEncoding] options:NSJSONReadingMutableContainers error:NULL];
 			
-			// TODO: only update existing items if we can
+			// only update existing items if we can
 			NSArray * existingTests = _tests;
 			_tests = [NSMutableArray array];
 			for (NSDictionary * testInfo in testInfoArray) {
@@ -196,6 +224,35 @@
 				}
 			}
 			
+			// test targets (testTargets)
+			NSArray * existingTestTargets = _testTargets;
+			_testTargets = [NSMutableArray array];
+			for (NSDictionary * testInfo in testInfoArray) {
+				BOOL didExist = false;
+				for (SPMTest * existingTestTarget in _testTargets) {
+					if ([existingTestTarget.targetName isEqualToString: testInfo[@"targetName"]]) {
+						didExist = true;
+					}
+				}
+				if (didExist) {
+					continue;
+				}
+				
+				BOOL didUpdate = false;
+				for (SPMTest * existingTestTarget in existingTestTargets) {
+					if ([existingTestTarget.targetName isEqualToString: testInfo[@"targetName"]]) {
+						[existingTestTarget updateWithDictionary: testInfo];
+						[_testTargets addObject: existingTestTarget];
+						NSLog(@"updating test class: %@", testInfo);
+						didUpdate = true;
+					}
+				}
+				if (didUpdate == false) {
+					NSLog(@"adding test target: %@", testInfo);
+					[_testTargets addObject:[[SPMTestTarget alloc] initWithDictionary:testInfo]];
+				}
+			}
+			
 			[_tests sortUsingComparator: ^NSComparisonResult(SPMTest* obj1, SPMTest* obj2) {
 				return [[obj1 className] compare:[obj2 className]];
 			}];
@@ -203,9 +260,14 @@
 			[_testClasses sortUsingComparator: ^NSComparisonResult(SPMTestClass* obj1, SPMTestClass* obj2) {
 				return [[obj1 className] compare:[obj2 className]];
 			}];
-						
+			
+			[_testTargets sortUsingComparator: ^NSComparisonResult(SPMTestTarget* obj1, SPMTestTarget* obj2) {
+				return [[obj1 className] compare:[obj2 className]];
+			}];
+			
 			NSLog(@"_tests.count: %lu", _tests.count);
 			NSLog(@"_testClasses.count: %lu", _testClasses.count);
+			NSLog(@"_testTargets.count: %lu", _testTargets.count);
 			
 			[self updateHandlers];
 		});
@@ -235,6 +297,24 @@
 			for(SPMTest * test in _tests) {
 				if ([test.targetName isEqualToString: targetName] &&
 					[test.className isEqualToString: className]) {
+					[test beginTest];
+					[runningTests addObject: test];
+				}
+			}
+		}
+		if ([maybeTest isKindOfClass: [SPMTestTarget class]]) {
+			NSString * targetName = [(SPMTestTarget *)maybeTest targetName];
+			[maybeTest beginTest];
+			[runningTests addObject: maybeTest];
+			
+			for(SPMTest * test in _tests) {
+				if ([test.targetName isEqualToString: targetName]) {
+					[test beginTest];
+					[runningTests addObject: test];
+				}
+			}
+			for(SPMTestClass * test in _testClasses) {
+				if ([test.targetName isEqualToString: targetName]) {
 					[test beginTest];
 					[runningTests addObject: test];
 				}
@@ -277,6 +357,29 @@
 		}
 	}
 	
+	for (SPMTestTarget * testTarget in _testTargets) {
+		int numPass = 0;
+		int numFail = 0;
+		
+		for (SPMTest * test in _tests) {
+			if ([testTarget.targetName isEqualToString: test.targetName]) {
+				if ([test.result isEqualToString: @"passed"]) {
+					numPass += 1;
+				} else if ([test.result isEqualToString: @"failed"]) {
+					numFail += 1;
+				}
+			}
+		}
+		
+		[testTarget willChangeValueForKey:@"runIcon"];
+		if (numFail > 0) {
+		 	testTarget.result = @"failed";
+		} else if (numPass > 0) {
+		 	testTarget.result = @"passed";
+		}
+		[testTarget didChangeValueForKey:@"runIcon"];
+	}
+	
 	for (SPMTestClass * testClass in _testClasses) {
 		int numPass = 0;
 		int numFail = 0;
@@ -297,12 +400,8 @@
 		 	testClass.result = @"failed";
 		} else if (numPass > 0) {
 		 	testClass.result = @"passed";
-		} else {
-			//testClass.result = NULL;
 		}
 		[testClass didChangeValueForKey:@"runIcon"];
-		
-		// NSLog(@"update test class: %@ for %@", testClass.result, testClass.className);
 	}
 	
 	// sanity: all the tests we started should be done now, so reset any which are in progress

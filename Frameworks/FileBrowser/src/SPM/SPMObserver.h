@@ -3,6 +3,7 @@
 
 #import "SPMTest.h"
 #import "SPMTestClass.h"
+#import "SPMTestTarget.h"
 
 typedef void(^HandlerBlock)(NSArray<NSURL*>*); 
 
@@ -15,6 +16,7 @@ typedef void(^HandlerBlock)(NSArray<NSURL*>*);
 @property (nonatomic) NSString* projectPath;
 @property (nonatomic) NSMutableArray* tests;
 @property (nonatomic) NSMutableArray* testClasses;
+@property (nonatomic) NSMutableArray* testTargets;
 
 @property (nonatomic) NSMutableArray* handlers;
 // 

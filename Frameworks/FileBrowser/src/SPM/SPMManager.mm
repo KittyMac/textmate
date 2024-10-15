@@ -104,6 +104,20 @@
 	return [_observers objectForKey:projectURL];
 }
 
+- (SPMTestTarget*)existingTestTargetAtURL:(NSURL*)url
+{
+	if (SPMObserver * observer = [self existingObserverAtURL: url]) {
+		NSString * targetName = [url queryForKey:@"targetName"];
+		NSString * className = [url queryForKey:@"className"];
+		for (SPMTestTarget * testTarget in observer.testTargets) {
+			if ([testTarget.targetName isEqualToString: targetName]) {
+				return testTarget;
+			}
+		}
+	}
+	return nil;
+}
+
 - (SPMTestClass*)existingTestClassAtURL:(NSURL*)url
 {
 	if (SPMObserver * observer = [self existingObserverAtURL: url]) {

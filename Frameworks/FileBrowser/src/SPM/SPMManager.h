@@ -19,6 +19,7 @@ NSImage * spmTestsProgressImage;
 						 usingBlock:(HandlerBlock) handler;
 
 - (SPMObserver*)existingObserverAtURL:(NSURL*)url;
+- (SPMTestTarget*)existingTestTargetAtURL:(NSURL*)url;
 - (SPMTestClass*)existingTestClassAtURL:(NSURL*)url;
 - (SPMTest*)existingTestAtURL:(NSURL*)url;
 - (NSArray*)existingTestsAtURL:(NSURL*)url;
