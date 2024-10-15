@@ -97,7 +97,7 @@
 {
 	NSLog(@"RUN TESTS - TEST CLASS");
 	SPMObserver * observer = [[SPMManager sharedInstance] existingObserverAtURL: self.URL];
-	NSString * filter = [NSString stringWithFormat:@"%@.%@", _testClass.targetName, _testClass.className];
+	NSString * filter = [NSString stringWithFormat:@"%@", _testClass.className];
 	[observer runTests: @[filter]];	
 }
 
