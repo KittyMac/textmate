@@ -8,5 +8,8 @@ build:
 run:
 	/Users/rjbowli/build/textmate/release/Applications/TextMate/TextMate.app/Contents/MacOS/TextMate
 
+install:
+	cp -R /Users/rjbowli/build/textmate/release/Applications/TextMate/TextMate.app /Applications
+
 clean:
 	rm -r /Users/rjbowli/build/textmate
