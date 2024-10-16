@@ -45,6 +45,8 @@ extern NSURL* const kURLLocationFavorites;
 - (void)updateFileProperties;
 
 - (id) tableCellView;
+
+- (NSURL *) openFileURL;
 @end
 
 @interface FileItem (Observer)

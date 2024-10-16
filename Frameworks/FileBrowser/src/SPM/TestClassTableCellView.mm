@@ -114,7 +114,12 @@
 
 - (NSURL*)parentURL
 {
-	return [NSURL fileURLWithPath:self.URL.path];
+	return [NSURL fileURLWithPath: self.URL.path];
 }
+
+- (NSURL *) openFileURL {
+	return [NSURL fileURLWithPath: _testClass.filePath];
+}
+
 @end
 

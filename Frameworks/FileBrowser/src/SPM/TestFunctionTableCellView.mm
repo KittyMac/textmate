@@ -123,4 +123,9 @@
 {
 	return [NSURL fileURLWithPath:self.URL.path];
 }
+
+- (NSURL *) openFileURL {
+	return [NSURL fileURLWithPath: _test.filePath];
+}
+
 @end

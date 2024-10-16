@@ -109,6 +109,10 @@ static NSMutableDictionary* SchemeToClass;
 	return _URL.hasDirectoryPath;
 }
 
+- (NSURL *) openFileURL {
+	return _URL;
+}
+
 - (NSString*)displayName
 {
 	return [self.localizedName stringByAppendingString:_disambiguationSuffix ?: @""];

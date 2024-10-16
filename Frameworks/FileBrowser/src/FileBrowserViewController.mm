@@ -415,18 +415,28 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 
 	for(FileItem* item in items)
 	{
-		if(commandKeyDown)
-			[itemsToShowInFinder addObject:item];
-		else if(item.isDirectory && (treatPackageAsDirectory || !item.isPackage) || item.isLinkToDirectory && (treatPackageAsDirectory || !item.isLinkToPackage) || optionKeyDown && (item.isPackage || item.isLinkToDirectory))
-			[itemsToShowInFileBrowser addObject:item];
-		else if(item.isPackage || item.isLinkToPackage || item.URL.isFileURL && is_binary(item.URL.fileSystemRepresentation))
-			[itemsToOpen addObject:item];
-		else
-			[itemsToOpenInTextMate addObject:item];
+		if (item.URL.isFileURL) {
+			if(commandKeyDown) {
+				[itemsToShowInFinder addObject:item];
+			} else if(item.isDirectory && (treatPackageAsDirectory || !item.isPackage) || item.isLinkToDirectory && (treatPackageAsDirectory || !item.isLinkToPackage) || optionKeyDown && (item.isPackage || item.isLinkToDirectory)) {
+				[itemsToShowInFileBrowser addObject:item];
+			} else if(item.isPackage || item.isLinkToPackage || item.URL.isFileURL && is_binary(item.URL.fileSystemRepresentation)) {
+				[itemsToOpen addObject:item];
+			} else {
+				[itemsToOpenInTextMate addObject:item];
+			}
+		} else {
+			NSURL * openFileURL = [item openFileURL];
+			if (openFileURL) {
+				[itemsToOpenInTextMate addObject:[FileItem fileItemWithURL: openFileURL]];
+			}
+		}
 	}
 
-	if(itemsToShowInFileBrowser.count > 0)
+	if(itemsToShowInFileBrowser.count > 0) {
+		NSLog(@"itemsToShowInFileBrowser: %@", itemsToShowInFinder);
 		return [self goToURL:itemsToShowInFileBrowser.firstObject.resolvedURL];
+	}
 
 	if(animateFlag && ![NSUserDefaults.standardUserDefaults boolForKey:kUserDefaultsFileBrowserOpenAnimationDisabled])
 	{
@@ -437,14 +447,20 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 		}
 	}
 
-	if(itemsToShowInFinder.count > 0)
+	if(itemsToShowInFinder.count > 0) {
+		NSLog(@"itemsToShowInFinder: %@", itemsToShowInFinder);
 		[NSWorkspace.sharedWorkspace activateFileViewerSelectingURLs:[itemsToShowInFinder valueForKeyPath:@"URL"]];
+	}
 
-	for(FileItem* item in itemsToOpen)
+	for(FileItem* item in itemsToOpen) {
+		NSLog(@"itemsToOpen: %@", itemsToOpen);
 		[NSWorkspace.sharedWorkspace openFile:item.resolvedURL.path];
+	}
 
-	if(itemsToOpenInTextMate.count > 0)
+	if(itemsToOpenInTextMate.count > 0) {
+		NSLog(@"itemsToOpenInTextMate: %@", itemsToOpenInTextMate);
 		[self.delegate fileBrowser:self openURLs:[itemsToOpenInTextMate valueForKeyPath:@"URL"]];
+	}
 }
 
 - (void)didSingleClickOutlineView:(id)sender
@@ -2113,16 +2129,16 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 	}
 	if ([item.URL.scheme hasPrefix: @"spmTestClass"]) {
 		TestClassTableCellView * view = [[TestClassTableCellView alloc] init];
-		view.openButton.target  = self;
 		view.openButton.action  = @selector(takeItemToOpenFrom:);
+		view.openButton.target  = self;
 		view.runButton.button.action = @selector(runTests:);
 		view.runButton.button.target = item;
 		return view;
 	}
 	if ([item.URL.scheme hasPrefix: @"spmTestFunction"]) {
 		TestFunctionTableCellView * view = [[TestFunctionTableCellView alloc] init];
-		view.openButton.target  = self;
 		view.openButton.action  = @selector(takeItemToOpenFrom:);
+		view.openButton.target  = self;
 		view.runButton.button.action = @selector(runTests:);
 		view.runButton.button.target = item;
 		return view;
@@ -2148,7 +2164,6 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 	if(row != -1)
 	{
 		FileItem* item = [self.outlineView itemAtRow:row];
-		NSLog(@"open item: %@", item);
 		[self openItems:@[ item ] animate:YES];
 	}
 }
