@@ -8,6 +8,17 @@
 #import <OakFoundation/NSString Additions.h>
 #import <OakAppKit/NSAlert Additions.h>
 
+#import <sys/sysctl.h>
+
+int getPhysicalCoreCount() {
+    int cores = 0;
+    size_t len = sizeof(cores);
+    sysctlbyname("hw.physicalcpu", &cores, &len, NULL, 0);
+    return cores;
+}
+
+NSOperationQueue * spmateQueue = [[NSOperationQueue alloc] init];
+
 @implementation SPMHandler
 - (instancetype) initWithURL:(NSURL*)url
 								usingBlock:(HandlerBlock) handler
@@ -274,7 +285,20 @@
 	});
 }
 
+- (void) runTargetTests:(SPMTestTarget *)testTarget {
+	for(SPMTestClass * test in _testClasses) {
+		if ([test.targetName isEqualToString: testTarget.targetName]) {
+			[self runTests: @[test] withTestTarget: testTarget];
+		}
+	}
+}
+
 - (void) runTests:(NSArray*) tests {
+	[self runTests: tests withTestTarget: NULL];
+}
+
+- (void) runTests:(NSArray*) tests
+	withTestTarget:(SPMTestTarget *)testTarget {
 	NSMutableArray * filters = [NSMutableArray array];
 	
 	for (SPMTest * test in tests) {
@@ -282,6 +306,11 @@
 	}
 	
 	NSMutableArray * runningTests = [NSMutableArray array];
+	
+	if (testTarget != NULL) {
+		[testTarget beginTest];
+		[runningTests addObject: testTarget];
+	}
 	
 	for (id maybeTest in tests) {
 		if ([maybeTest isKindOfClass: [SPMTest class]]) {
@@ -322,7 +351,8 @@
 		}
 	}
 	
-	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+	spmateQueue.maxConcurrentOperationCount = getPhysicalCoreCount();
+	[spmateQueue addOperationWithBlock: ^{
 		NSString * spmatePath = [[NSBundle mainBundle] pathForAuxiliaryExecutable:@"spmate"];
 		NSLog(@"%@ %@ %@ %@ %@ %@", spmatePath, @"test", @"run", _projectPath, @"--filter", [filters componentsJoinedByString:@","]);
 		std::string res = io::exec([spmatePath UTF8String], "test", "run", [_projectPath UTF8String], "--filter", [[filters componentsJoinedByString:@","] UTF8String], NULL);
@@ -331,7 +361,7 @@
 			[self handleTestResults: json
 								forTests: runningTests];
 		});
-	});
+	}];
 }
 
 - (void) handleTestResults: (NSString *) json
@@ -357,9 +387,19 @@
 		}
 	}
 	
+	// sanity: all the tests we started should be done now, so reset any which are in progress
+	for(SPMTest * test in runningTests) {
+		if ([test.result isEqualToString: @"progress"]) {
+			[test willChangeValueForKey:@"runIcon"];
+			test.result = @"warn";
+			[test didChangeValueForKey:@"runIcon"];
+		}
+	}
+	
 	for (SPMTestTarget * testTarget in _testTargets) {
 		int numPass = 0;
 		int numFail = 0;
+		int numWaiting = 0;
 		
 		for (SPMTest * test in _tests) {
 			if ([testTarget.targetName isEqualToString: test.targetName]) {
@@ -367,12 +407,16 @@
 					numPass += 1;
 				} else if ([test.result isEqualToString: @"failed"]) {
 					numFail += 1;
+				} else if ([test.result isEqualToString: @"progress"]) {
+					numWaiting += 1;
 				}
 			}
 		}
 		
 		[testTarget willChangeValueForKey:@"runIcon"];
-		if (numFail > 0) {
+		if (numWaiting > 0) {
+			testTarget.result = @"progress";
+		} else if (numFail > 0) {
 		 	testTarget.result = @"failed";
 		} else if (numPass > 0) {
 		 	testTarget.result = @"passed";
@@ -383,6 +427,7 @@
 	for (SPMTestClass * testClass in _testClasses) {
 		int numPass = 0;
 		int numFail = 0;
+		int numWaiting = 0;
 		
 		for (SPMTest * test in _tests) {
 			if ([testClass.targetName isEqualToString: test.targetName] &&
@@ -391,12 +436,16 @@
 					numPass += 1;
 				} else if ([test.result isEqualToString: @"failed"]) {
 					numFail += 1;
+				} else if ([test.result isEqualToString: @"progress"]) {
+					numWaiting += 1;
 				}
 			}
 		}
 		
 		[testClass willChangeValueForKey:@"runIcon"];
-		if (numFail > 0) {
+		if (numWaiting > 0) {
+			testClass.result = @"progress";
+		} else if (numFail > 0) {
 		 	testClass.result = @"failed";
 		} else if (numPass > 0) {
 		 	testClass.result = @"passed";
@@ -404,14 +453,7 @@
 		[testClass didChangeValueForKey:@"runIcon"];
 	}
 	
-	// sanity: all the tests we started should be done now, so reset any which are in progress
-	for(SPMTest * test in runningTests) {
-		if ([test.result isEqualToString: @"progress"]) {
-			[test willChangeValueForKey:@"runIcon"];
-			test.result = @"warn";
-			[test didChangeValueForKey:@"runIcon"];
-		}
-	}
+	
 	//NSLog(@"%@", json);
 }
 

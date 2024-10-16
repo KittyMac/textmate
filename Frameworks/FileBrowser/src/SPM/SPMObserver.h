@@ -34,6 +34,7 @@ typedef void(^HandlerBlock)(NSArray<NSURL*>*);
 - (void) refreshTests;
 
 - (void) runTests:(NSArray*) tests;
+- (void) runTargetTests:(SPMTestTarget *)testTarget;
 
 @end
 

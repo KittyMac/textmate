@@ -32,8 +32,8 @@
 		[self addSubview:_button];
 		[self addSubview:_progress];
 		
-		[self.widthAnchor constraintLessThanOrEqualToConstant: 14].active = YES;
-		[self.heightAnchor constraintLessThanOrEqualToConstant: 14].active = YES;
+		[self.widthAnchor constraintEqualToConstant: 14].active = YES;
+		[self.heightAnchor constraintEqualToConstant: 14].active = YES;
 		
 		[self setImage: NULL];
 	}
