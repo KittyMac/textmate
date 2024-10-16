@@ -14,6 +14,7 @@
 	self = [super init];
 	if (self) {
 		_targetName = info[@"targetName"];
+		_targetPath = info[@"targetPath"];
 		_result = info[@"result"];
 	}
 	return self;

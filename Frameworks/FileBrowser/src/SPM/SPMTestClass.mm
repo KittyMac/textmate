@@ -15,6 +15,7 @@
 	if (self) {
 		_targetName = info[@"targetName"];
 		_className = info[@"className"];
+		_filePath = info[@"filePath"];
 		_result = info[@"result"];
 	}
 	return self;
@@ -23,6 +24,7 @@
 - (void) updateWithDictionary: (NSDictionary *) info {
 	_targetName = info[@"targetName"];
 	_className = info[@"className"];
+	_filePath = info[@"filePath"];
 
  	[self willChangeValueForKey:@"runIcon"];
 	_result = info[@"result"];
@@ -57,6 +59,10 @@
 		return spmTestsWarnImage;
 	}
 	return spmTestsUnknownImage;
+}
+
+- (NSImage *) fileIcon {
+	return spmTestClassImage;
 }
 
 @end

@@ -4,7 +4,7 @@ import XCTest
 final class ExampleTestsB: XCTestCase {
     func testExample0() {
         print("\(#file): \(#function)")
-        XCTFail()
+        XCTAssertEqual(true, false)
     }
     
     func testExample1() {

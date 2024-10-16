@@ -16,6 +16,16 @@
 {
 	if((self = [super initWithFrame:NSZeroRect]))
 	{
+		_openButton = [[NSButton alloc] initWithFrame:NSZeroRect];
+		_openButton.refusesFirstResponder = YES;
+		_openButton.buttonType            = NSButtonTypeMomentaryChange;
+		_openButton.bordered              = NO;
+		_openButton.imagePosition         = NSImageOnly;
+		_openButton.imageScaling          = NSImageScaleProportionallyUpOrDown;
+
+		[_openButton.widthAnchor  constraintEqualToConstant:16].active = YES;
+		[_openButton.heightAnchor constraintEqualToConstant:16].active = YES;
+		
 		NSTextField* textField = OakCreateLabel(@"", [NSFont controlContentFontOfSize:0]);
 		textField.cell = [[NSTextFieldCell alloc] initTextCell:@""];
 		[textField.cell setWraps:NO];
@@ -24,7 +34,7 @@
 		_runButton = [[RunTestButton alloc] initWithFrame:NSZeroRect];
 
 		NSStackView* stackView = [NSStackView stackViewWithViews:@[
-			textField, _runButton
+			_openButton, textField, _runButton
 		]];
 		stackView.spacing = 4;
 
@@ -37,6 +47,7 @@
 		[stackView.topAnchor      constraintEqualToAnchor:self.topAnchor      constant: 0].active = YES;
 		[stackView.bottomAnchor   constraintEqualToAnchor:self.bottomAnchor   constant: 0].active = YES;
 		
+		[_openButton bind:NSImageBinding toObject:self withKeyPath:@"objectValue.testClass.fileIcon" options:nil];
 		[_runButton bind:NSImageBinding toObject:self withKeyPath:@"objectValue.testClass.runIcon" options:nil];
 		[textField bind:NSValueBinding toObject:self withKeyPath:@"objectValue.testClass.className" options:nil];
 	}

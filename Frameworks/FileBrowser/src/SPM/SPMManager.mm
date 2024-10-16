@@ -38,6 +38,15 @@
 {
 	static SPMManager* sharedInstance = [self new];
 	
+	if (spmTestClassImage == NULL) {
+		spmTestClassImage = [NSImage imageNamed:@"TestClassTemplate" inSameBundleAsClass:[OakRolloverButton class]];
+		[spmTestClassImage setTemplate: NO];
+	}
+	if (spmTestMethodImage == NULL) {
+		spmTestMethodImage = [NSImage imageNamed:@"TestMethodTemplate" inSameBundleAsClass:[OakRolloverButton class]];
+		[spmTestMethodImage setTemplate: NO];
+	}
+	
 	if (spmTestsPassImage == NULL) {
 		spmTestsPassImage = [NSImage imageNamed:@"TestsPassTemplate" inSameBundleAsClass:[OakRolloverButton class]];
 		[spmTestsPassImage setTemplate: NO];

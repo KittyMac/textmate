@@ -3,6 +3,7 @@
 
 @interface SPMTestTarget : NSObject
 @property (nonatomic) NSString * targetName;
+@property (nonatomic) NSString * targetPath;
 @property (nonatomic) NSString * result;
 
 - (id) initWithDictionary: (NSDictionary *) info;

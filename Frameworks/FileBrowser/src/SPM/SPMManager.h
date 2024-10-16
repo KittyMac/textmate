@@ -1,6 +1,10 @@
 #import "SPMObserver.h"
 #import <scm/status.h>
 
+
+NSImage * spmTestClassImage;
+NSImage * spmTestMethodImage;
+
 NSImage * spmTestsPassImage;
 NSImage * spmTestsFailImage;
 NSImage * spmTestsWarnImage;

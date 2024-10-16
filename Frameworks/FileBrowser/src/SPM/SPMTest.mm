@@ -65,4 +65,8 @@
 	return spmTestsUnknownImage;
 }
 
+- (NSImage *) fileIcon {
+	return spmTestMethodImage;
+}
+
 @end

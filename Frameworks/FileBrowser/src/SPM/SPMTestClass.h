@@ -4,6 +4,7 @@
 @interface SPMTestClass : NSObject
 @property (nonatomic) NSString * targetName;
 @property (nonatomic) NSString * className;
+@property (nonatomic) NSString * filePath;
 @property (nonatomic) NSString * result;
 
 - (id) initWithDictionary: (NSDictionary *) info;

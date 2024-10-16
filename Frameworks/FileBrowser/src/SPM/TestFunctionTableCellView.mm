@@ -35,9 +35,7 @@
 		_runButton = [[RunTestButton alloc] initWithFrame:NSZeroRect];
 		
 		NSStackView* stackView = [NSStackView stackViewWithViews:@[
-			// _openButton, textField
-			textField,
-			_runButton
+			_openButton, textField, _runButton
 		]];
 		stackView.spacing = 4;
 
@@ -50,6 +48,7 @@
 		[stackView.topAnchor      constraintEqualToAnchor:self.topAnchor      constant: 0].active = YES;
 		[stackView.bottomAnchor   constraintEqualToAnchor:self.bottomAnchor   constant: 0].active = YES;
 		
+		[_openButton bind:NSImageBinding toObject:self withKeyPath:@"objectValue.test.fileIcon" options:nil];
 		[_runButton bind:NSImageBinding toObject:self withKeyPath:@"objectValue.test.runIcon" options:nil];
 		[textField bind:NSValueBinding toObject:self withKeyPath:@"objectValue.test.functionName" options:nil];
 	}

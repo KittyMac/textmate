@@ -2113,12 +2113,16 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 	}
 	if ([item.URL.scheme hasPrefix: @"spmTestClass"]) {
 		TestClassTableCellView * view = [[TestClassTableCellView alloc] init];
+		view.openButton.target  = self;
+		view.openButton.action  = @selector(takeItemToOpenFrom:);
 		view.runButton.button.action = @selector(runTests:);
 		view.runButton.button.target = item;
 		return view;
 	}
 	if ([item.URL.scheme hasPrefix: @"spmTestFunction"]) {
 		TestFunctionTableCellView * view = [[TestFunctionTableCellView alloc] init];
+		view.openButton.target  = self;
+		view.openButton.action  = @selector(takeItemToOpenFrom:);
 		view.runButton.button.action = @selector(runTests:);
 		view.runButton.button.target = item;
 		return view;
@@ -2144,6 +2148,7 @@ static NSMutableIndexSet* MutableLongestCommonSubsequence (NSArray* lhs, NSArray
 	if(row != -1)
 	{
 		FileItem* item = [self.outlineView itemAtRow:row];
+		NSLog(@"open item: %@", item);
 		[self openItems:@[ item ] animate:YES];
 	}
 }
