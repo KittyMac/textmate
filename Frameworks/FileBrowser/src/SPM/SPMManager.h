@@ -3,6 +3,7 @@
 
 NSImage * spmTestsPassImage;
 NSImage * spmTestsFailImage;
+NSImage * spmTestsWarnImage;
 NSImage * spmTestsUnknownImage;
 NSImage * spmTestsClearImage;
 NSImage * spmTestsProgressImage;

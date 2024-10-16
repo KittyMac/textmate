@@ -59,6 +59,9 @@
 	if ([_result isEqualToString: @"failed"]) {
 		return spmTestsFailImage;
 	}
+	if ([_result isEqualToString: @"warn"]) {
+		return spmTestsWarnImage;
+	}
 	return spmTestsUnknownImage;
 }
 

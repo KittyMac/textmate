@@ -408,7 +408,7 @@
 	for(SPMTest * test in runningTests) {
 		if ([test.result isEqualToString: @"progress"]) {
 			[test willChangeValueForKey:@"runIcon"];
-			test.result = NULL;
+			test.result = @"warn";
 			[test didChangeValueForKey:@"runIcon"];
 		}
 	}

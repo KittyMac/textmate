@@ -46,6 +46,10 @@
 		spmTestsFailImage = [NSImage imageNamed:@"TestsFailTemplate" inSameBundleAsClass:[OakRolloverButton class]];
 		[spmTestsFailImage setTemplate: NO];
 	}
+	if (spmTestsWarnImage == NULL) {
+		spmTestsWarnImage = [NSImage imageNamed:@"TestsWarnTemplate" inSameBundleAsClass:[OakRolloverButton class]];
+		[spmTestsWarnImage setTemplate: NO];
+	}
 	if (spmTestsUnknownImage == NULL) {
 		spmTestsUnknownImage = [NSImage imageNamed:@"TestsUnknownTemplate" inSameBundleAsClass:[OakRolloverButton class]];
 		[spmTestsUnknownImage setTemplate: NO];
