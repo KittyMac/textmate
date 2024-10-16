@@ -93,8 +93,8 @@
 {
 	NSLog(@"RUN TESTS - TEST TARGET");
 	SPMObserver * observer = [[SPMManager sharedInstance] existingObserverAtURL: self.URL];
-	//[observer runTests: @[_testTarget]];	
-	[observer runTargetTests: _testTarget];	
+	[observer runTests: @[_testTarget]];	
+	//[observer runTargetTests: _testTarget];	
 }
 
 - (NSString*)localizedName

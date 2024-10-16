@@ -369,7 +369,7 @@ NSOperationQueue * spmateQueue = [[NSOperationQueue alloc] init];
 	NSArray * results = [NSJSONSerialization JSONObjectWithData:[json dataUsingEncoding:NSUTF8StringEncoding] options:NSJSONReadingMutableContainers error:NULL];
 	// {"className":"ExampleTestsA","functionName":"testExample0","result":"passed","targetName":"testTests"}
 	
-	NSLog(@"%@", json);
+	// NSLog(@"%@", json);
 	
 	for (NSDictionary * result in results) {
 		// For all test classes
@@ -386,6 +386,8 @@ NSOperationQueue * spmateQueue = [[NSOperationQueue alloc] init];
 			 }
 		}
 	}
+	
+	NSLog(@"%lu results for %lu tests", [results count], [runningTests count]);
 	
 	// sanity: all the tests we started should be done now, so reset any which are in progress
 	for(SPMTest * test in runningTests) {
@@ -453,8 +455,6 @@ NSOperationQueue * spmateQueue = [[NSOperationQueue alloc] init];
 		[testClass didChangeValueForKey:@"runIcon"];
 	}
 	
-	
-	//NSLog(@"%@", json);
 }
 
 @end
