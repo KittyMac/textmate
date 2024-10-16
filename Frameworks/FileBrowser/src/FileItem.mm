@@ -30,9 +30,6 @@ static NSMutableDictionary* SchemeToClass;
 
 + (Class)classForURL:(NSURL*)url
 {
-	if (SchemeToClass[url.scheme] == NULL) {
-		return [FileItem class];
-	}
 	return SchemeToClass[url.scheme];
 }
 
