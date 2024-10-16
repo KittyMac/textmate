@@ -40,7 +40,7 @@
 }
 
 - (NSString *) filter {
-	return [NSString stringWithFormat:@"%@/%@", _className, _functionName];
+	return [NSString stringWithFormat:@"%@.%@/%@", _targetName, _className, _functionName];
 }
 
 - (void) beginTest {

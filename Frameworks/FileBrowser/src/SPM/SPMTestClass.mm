@@ -34,7 +34,7 @@
 }
 
 - (NSString *) filter {
-	return [NSString stringWithFormat:@"%@", _className];
+	return [NSString stringWithFormat:@"%@.%@", _targetName, _className];
 }
 
 - (void) beginTest {
