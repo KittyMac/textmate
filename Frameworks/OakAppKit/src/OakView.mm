@@ -14,6 +14,8 @@ NSUInteger const OakViewViewIsFirstResponderMask = 1 << 3;
 {
 	if((self = [super initWithFrame:aFrame]))
 	{
+		self.clipsToBounds = true;
+		
 		[NSNotificationCenter.defaultCenter addObserver:self selector:@selector(updateKeyState:) name:NSApplicationDidBecomeActiveNotification object:NSApp];
 		[NSNotificationCenter.defaultCenter addObserver:self selector:@selector(updateKeyState:) name:NSApplicationDidResignActiveNotification object:NSApp];
 		[NSNotificationCenter.defaultCenter addObserver:self selector:@selector(updateKeyState:) name:NSWindowDidBecomeMainNotification object:nil];

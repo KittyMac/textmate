@@ -52,8 +52,11 @@ static NSString* const kFoldingsColumnIdentifier  = @"foldings";
 {
 	if(self = [super initWithFrame:aRect])
 	{
+		self.clipsToBounds = true;
+		
 		self.accessibilityRole  = NSAccessibilityGroupRole;
 		self.accessibilityLabel = @"Editor";
+		self.clipsToBounds = true;
 
 		_textView = [[OakTextView alloc] initWithFrame:NSZeroRect];
 		_textView.autoresizingMask = NSViewWidthSizable|NSViewHeightSizable;
@@ -79,6 +82,7 @@ static NSString* const kFoldingsColumnIdentifier  = @"foldings";
 		gutterScrollView.accessibilityElement = NO;
 		gutterScrollView.borderType   = NSNoBorder;
 		gutterScrollView.documentView = gutterView;
+		gutterScrollView.clipsToBounds = true;
 
 		[gutterScrollView.contentView addConstraint:[NSLayoutConstraint constraintWithItem:gutterView attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:gutterScrollView.contentView attribute:NSLayoutAttributeLeft multiplier:1.0 constant:0.0]];
 		[gutterScrollView.contentView addConstraint:[NSLayoutConstraint constraintWithItem:gutterView attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:gutterScrollView.contentView attribute:NSLayoutAttributeTop multiplier:1.0 constant:0.0]];

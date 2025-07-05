@@ -21,6 +21,8 @@ static NSString* const kRecordingPlaceholderString = @"…";
 @implementation OakKeyEquivalentView
 - (id)initWithFrame:(NSRect)aRect
 {
+	self.clipsToBounds = true;
+	
 	if(self = [super initWithFrame:aRect])
 		self.disableGlobalHotkeys = YES;
 	return self;

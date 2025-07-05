@@ -30,6 +30,8 @@ NSString* const kUserDefaultsHTMLOutputSizeKey   = @"htmlOutputSize";
 {
 	if(self = [super initWithFrame:aRect])
 	{
+		self.clipsToBounds = true;
+		
 		_myConstraints    = [NSMutableArray array];
 		_fileBrowserWidth = [NSUserDefaults.standardUserDefaults integerForKey:kUserDefaultsFileBrowserWidthKey];
 		_htmlOutputSize   = NSSizeFromString([NSUserDefaults.standardUserDefaults stringForKey:kUserDefaultsHTMLOutputSizeKey]);

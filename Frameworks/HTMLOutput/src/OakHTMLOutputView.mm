@@ -28,6 +28,7 @@
 {
 	if(self = [super initWithFrame:aRect])
 	{
+		self.clipsToBounds = true;
 		_reusable = YES;
 	}
 	return self;

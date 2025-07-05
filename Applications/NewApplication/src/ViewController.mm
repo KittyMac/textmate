@@ -8,6 +8,7 @@
 {
 	if(self = [super initWithFrame:aRect])
 	{
+		self.clipsToBounds = true;
 	}
 	return self;
 }

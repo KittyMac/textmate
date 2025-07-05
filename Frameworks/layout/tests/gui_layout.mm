@@ -106,6 +106,8 @@ private:
 {
 	if((self = [super initWithFrame:aRect]))
 	{
+		self.clipsToBounds = true;
+		
 		struct buffer_refresh_callback_t : ng::callback_t
 		{
 			buffer_refresh_callback_t (MyView* self) : _self(self) { }

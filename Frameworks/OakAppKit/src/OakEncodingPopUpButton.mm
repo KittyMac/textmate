@@ -197,6 +197,8 @@ namespace // PopulateMenu{Flat,Hierarchical}
 {
 	if(self = [super initWithFrame:aRect pullsDown:flag])
 	{
+		self.clipsToBounds = true;
+		
 		self.encoding = @"UTF-8";
 		[self updateAvailableEncodings];
 		[self updateMenu];

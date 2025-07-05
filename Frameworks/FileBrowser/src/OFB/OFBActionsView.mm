@@ -18,6 +18,8 @@ static NSButton* OakCreateImageButton (NSImage* image)
 {
 	if(self = [super initWithFrame:aRect])
 	{
+		self.clipsToBounds = true;
+		
 		self.wantsLayer   = YES;
 		self.material     = NSVisualEffectMaterialTitlebar;
 		self.blendingMode = NSVisualEffectBlendingModeWithinWindow;

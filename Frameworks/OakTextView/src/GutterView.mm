@@ -55,6 +55,8 @@ struct data_source_t
 {
 	if(self = [super initWithFrame:frame])
 	{
+		self.clipsToBounds = true;
+		
 		id fontName = [NSUserDefaults.standardUserDefaults objectForKey:@"NSFixedPitchFont"];
 		id fontSize = [NSUserDefaults.standardUserDefaults objectForKey:@"NSFixedPitchFontSize"];
 		crash_reporter_info_t info("User has font name override %s, size %s", BSTR(fontName), BSTR(fontSize));

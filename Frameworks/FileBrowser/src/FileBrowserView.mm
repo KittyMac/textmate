@@ -13,6 +13,8 @@
 {
 	if(self = [super initWithFrame:aRect])
 	{
+		self.clipsToBounds = true;
+		
 		self.accessibilityRole  = NSAccessibilityGroupRole;
 		self.accessibilityLabel = @"File browser";
 

@@ -18,6 +18,8 @@
 {
 	if(self = [super initWithFrame:aRect])
 	{
+		self.clipsToBounds = true;
+		
 		self.style   = OakBackgroundFillViewStyleHeader;
 		self.divider = OakCreateNSBoxSeparator();
 

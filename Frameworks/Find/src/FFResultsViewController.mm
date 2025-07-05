@@ -48,6 +48,8 @@ static FFResultNode* PreviousNode (FFResultNode* node)
 {
 	if((self = [super initWithFrame:aFrame]))
 	{
+		self.clipsToBounds = true;
+		
 		_button = OakCreateCheckBox(nil);
 		_button.controlSize = NSControlSizeSmall;
 

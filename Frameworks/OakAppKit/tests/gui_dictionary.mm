@@ -11,6 +11,8 @@
 {
 	if((self = [super initWithFrame:aRect]))
 	{
+		self.clipsToBounds = true;
+		
 		myTextStorage = @"This is a test. Try press ⌃⌘D on one of these words.";
 	}
 	return self;

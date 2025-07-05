@@ -81,6 +81,8 @@ void OakShowPopOutAnimation (NSView* parentView, NSRect popOutRect, NSImage* anI
 {
 	if(self = [super initWithFrame:aRect])
 	{
+		self.clipsToBounds = true;
+		
 		CGPathRef path;
 		NSRect shapeRect = popOutRect;
 		shapeRect.origin = CGPointZero;

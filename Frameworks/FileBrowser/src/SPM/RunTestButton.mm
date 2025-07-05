@@ -15,6 +15,8 @@
 - (instancetype)initWithFrame:(NSRect) frame
 {
 	if((self = [super initWithFrame:frame])) {
+		self.clipsToBounds = true;
+		
 		_button = [[NSButton alloc] initWithFrame:frame];
 		_button.refusesFirstResponder = YES;
 		_button.buttonType = NSButtonTypeMomentaryChange;

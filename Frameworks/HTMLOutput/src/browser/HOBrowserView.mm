@@ -26,6 +26,8 @@ static void ShowLoadErrorForURL (WebFrame* frame, NSURL* url, NSError* error)
 {
 	if(self = [super initWithFrame:frame])
 	{
+		self.clipsToBounds = true;
+		
 		_webView = [[WebView alloc] initWithFrame:NSZeroRect];
 
 		NSString* const kHTMLOutputPreferencesIdentifier = @"HTML Output Preferences Identifier";

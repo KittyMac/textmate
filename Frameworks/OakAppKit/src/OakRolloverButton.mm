@@ -27,6 +27,8 @@ typedef NS_ENUM(NSUInteger, OakImageState) {
 {
 	if((self = [super initWithFrame:aFrame]))
 	{
+		self.clipsToBounds = true;
+		
 		self.buttonType = NSButtonTypeMomentaryChange;
 		self.bordered   = NO;
 

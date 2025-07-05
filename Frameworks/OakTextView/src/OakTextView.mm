@@ -967,6 +967,8 @@ static std::string shell_quote (std::vector<std::string> paths)
 {
 	if(self = [super initWithFrame:aRect])
 	{
+		self.clipsToBounds = true;
+		
 		settings_t const& settings = settings_for_path();
 
 		_showInvisibles = settings.get(kSettingsShowInvisiblesKey, false);

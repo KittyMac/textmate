@@ -11,6 +11,8 @@
 {
 	if((self = [super initWithFrame:aRect]))
 	{
+		self.clipsToBounds = true;
+		
 		_keyString = @"Press some keys.";
 	}
 	return self;

@@ -31,6 +31,8 @@ static NSPopUpButton* OakCreateFolderPopUpButton ()
 {
 	if(self = [super initWithFrame:aRect])
 	{
+		self.clipsToBounds = true;
+		
 		self.wantsLayer   = YES;
 		self.blendingMode = NSVisualEffectBlendingModeWithinWindow;
 		self.material     = NSVisualEffectMaterialTitlebar;

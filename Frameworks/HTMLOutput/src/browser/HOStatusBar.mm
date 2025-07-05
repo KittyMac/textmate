@@ -41,6 +41,8 @@ static NSTextField* OakCreateTextField ()
 {
 	if(self = [super initWithFrame:frame])
 	{
+		self.clipsToBounds = true;
+		
 		self.wantsLayer   = YES;
 		self.material     = NSVisualEffectMaterialTitlebar;
 		self.blendingMode = NSVisualEffectBlendingModeWithinWindow;

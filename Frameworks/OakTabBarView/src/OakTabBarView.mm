@@ -247,6 +247,8 @@ static void* kOakTabViewSelectedContext  = &kOakTabViewSelectedContext;
 {
 	if(self = [super initWithFrame:frameRect])
 	{
+		self.clipsToBounds = true;
+		
 		self.accessibilityRole            = NSAccessibilityRadioButtonRole;
 		self.accessibilityRoleDescription = @"Tab";
 
@@ -694,6 +696,8 @@ static void* kOakTabViewSelectedContext  = &kOakTabViewSelectedContext;
 
 	if(self = [super initWithFrame:aRect])
 	{
+		self.clipsToBounds = true;
+		
 		self.accessibilityRole  = NSAccessibilityTabGroupRole;
 		self.accessibilityLabel = @"Open files";
 
