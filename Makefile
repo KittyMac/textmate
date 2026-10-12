@@ -13,3 +13,6 @@ install:
 
 clean:
 	rm -r /Users/rjbowli/build/textmate
+
+dependencies:
+	brew install ninja ragel multimarkdown boost google-sparsehash
